@@ -1,4 +1,5 @@
 """Telegram bot for notifications."""
+import asyncio
 from typing import Optional
 from telegram import Bot
 from telegram.error import TelegramError
@@ -20,6 +21,18 @@ class TelegramBot:
             except Exception as e:
                 log.error(f"Failed to initialize Telegram bot: {e}")
     
+    async def _send_async(self, message: str):
+        """Send a message asynchronously.
+        
+        Args:
+            message: Message text
+        """
+        await self.bot.send_message(
+            chat_id=self.config.chat_id,
+            text=message,
+            parse_mode="Markdown"
+        )
+    
     def send_message(self, message: str) -> bool:
         """Send a message via Telegram.
         
@@ -34,15 +47,14 @@ class TelegramBot:
             return False
         
         try:
-            self.bot.send_message(
-                chat_id=self.config.chat_id,
-                text=message,
-                parse_mode="Markdown"
-            )
+            asyncio.run(self._send_async(message))
             log.debug(f"Sent Telegram message: {message[:50]}...")
             return True
         except TelegramError as e:
             log.error(f"Failed to send Telegram message: {e}")
+            return False
+        except Exception as e:
+            log.error(f"Error sending Telegram message: {e}")
             return False
     
     def send_opportunity_alert(self, opportunity: dict) -> bool:
