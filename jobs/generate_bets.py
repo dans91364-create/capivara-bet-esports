@@ -81,7 +81,7 @@ def _save_matches_to_db(matches: List[Dict]) -> List[Match]:
         matches: List of match dictionaries
         
     Returns:
-        List of saved Match objects
+        List of saved Match objects (as dictionaries with IDs)
     """
     saved_matches = []
     
@@ -97,7 +97,15 @@ def _save_matches_to_db(matches: List[Dict]) -> List[Match]:
             
             if existing:
                 log.debug(f"Match already exists: {match_data['team1']} vs {match_data['team2']}")
-                saved_matches.append(existing)
+                saved_matches.append({
+                    'id': existing.id,
+                    'game': existing.game,
+                    'team1': existing.team1,
+                    'team2': existing.team2,
+                    'start_time': existing.start_time,
+                    'tournament': existing.tournament,
+                    'best_of': existing.best_of,
+                })
                 continue
             
             match = Match(
@@ -110,20 +118,28 @@ def _save_matches_to_db(matches: List[Dict]) -> List[Match]:
             )
             db.add(match)
             db.flush()  # Get the ID
-            saved_matches.append(match)
+            saved_matches.append({
+                'id': match.id,
+                'game': match.game,
+                'team1': match.team1,
+                'team2': match.team2,
+                'start_time': match.start_time,
+                'tournament': match.tournament,
+                'best_of': match.best_of,
+            })
             log.debug(f"Saved match: {match.team1} vs {match.team2}")
     
     return saved_matches
 
 
-def _generate_predictions(matches: List[Match]) -> List[Dict]:
+def _generate_predictions(matches: List[Dict]) -> List[Dict]:
     """Generate simple predictions for matches.
     
     For now, uses a simple random model with slight bias.
     In the future, this would use actual ML models.
     
     Args:
-        matches: List of Match objects
+        matches: List of match dictionaries with 'id' field
         
     Returns:
         List of prediction dictionaries
@@ -132,6 +148,8 @@ def _generate_predictions(matches: List[Match]) -> List[Dict]:
     
     with get_db() as db:
         for match in matches:
+            match_id = match['id']
+            
             # Simple prediction: random with slight variance
             # Team 1 probability between 40-60%
             team1_prob = random.uniform(0.40, 0.60)
@@ -139,7 +157,7 @@ def _generate_predictions(matches: List[Match]) -> List[Dict]:
             
             # Save prediction to database
             prediction = Prediction(
-                match_id=match.id,
+                match_id=match_id,
                 model_type='simple_random',
                 team1_win_prob=team1_prob,
                 team2_win_prob=team2_prob,
@@ -147,22 +165,22 @@ def _generate_predictions(matches: List[Match]) -> List[Dict]:
             db.add(prediction)
             
             predictions.append({
-                'match_id': match.id,
+                'match_id': match_id,
                 'team1_win_prob': team1_prob,
                 'team2_win_prob': team2_prob,
                 'model': 'simple_random',
             })
             
-            log.debug(f"Generated prediction for {match.team1} vs {match.team2}: {team1_prob:.2%} - {team2_prob:.2%}")
+            log.debug(f"Generated prediction for {match['team1']} vs {match['team2']}: {team1_prob:.2%} - {team2_prob:.2%}")
     
     return predictions
 
 
-def _generate_mock_odds(matches: List[Match]) -> List[Dict]:
+def _generate_mock_odds(matches: List[Dict]) -> List[Dict]:
     """Generate mock odds data for testing.
     
     Args:
-        matches: List of Match objects
+        matches: List of match dictionaries with 'id' field
         
     Returns:
         List of odds dictionaries
@@ -171,6 +189,8 @@ def _generate_mock_odds(matches: List[Match]) -> List[Dict]:
     bookmakers = ['Pinnacle', 'bet365', 'Betfair', 'Rivalry']
     
     for match in matches:
+        match_id = match['id']
+        
         for bookmaker in bookmakers:
             # Generate odds that are slightly worse than fair
             # This creates opportunities when our model is confident
@@ -185,7 +205,7 @@ def _generate_mock_odds(matches: List[Match]) -> List[Dict]:
             team2_odds = base_team2_odds * margin
             
             odds_data.append({
-                'match_id': match.id,
+                'match_id': match_id,
                 'bookmaker': bookmaker,
                 'market_type': 'match_winner',
                 'team1_odds': team1_odds,
@@ -195,17 +215,17 @@ def _generate_mock_odds(matches: List[Match]) -> List[Dict]:
     return odds_data
 
 
-def _enrich_opportunities(opportunities: List[Dict], matches: List[Match]) -> List[Dict]:
+def _enrich_opportunities(opportunities: List[Dict], matches: List[Dict]) -> List[Dict]:
     """Enrich opportunities with match details for notifications.
     
     Args:
         opportunities: List of opportunity dictionaries
-        matches: List of Match objects
+        matches: List of match dictionaries
         
     Returns:
         List of enriched opportunity dictionaries
     """
-    match_dict = {m.id: m for m in matches}
+    match_dict = {m['id']: m for m in matches}
     enriched = []
     
     for opp in opportunities:
@@ -217,11 +237,11 @@ def _enrich_opportunities(opportunities: List[Dict], matches: List[Match]) -> Li
         
         enriched_opp = {
             **opp,
-            'team1': match.team1,
-            'team2': match.team2,
-            'game': match.game,
-            'tournament': match.tournament,
-            'start_time': match.start_time,
+            'team1': match['team1'],
+            'team2': match['team2'],
+            'game': match['game'],
+            'tournament': match['tournament'],
+            'start_time': match['start_time'],
             'stake': 100,  # Default stake
         }
         enriched.append(enriched_opp)
