@@ -1,0 +1,52 @@
+"""Application settings and configuration."""
+import os
+from pathlib import Path
+from typing import Optional
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Base paths
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+LOGS_DIR = BASE_DIR / "logs"
+
+# Create directories if they don't exist
+DATA_DIR.mkdir(exist_ok=True)
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Database
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///capivara_bet.db")
+
+# Telegram
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+# Scrapers
+HLTV_BASE_URL = os.getenv("HLTV_BASE_URL", "https://www.hltv.org")
+VLR_BASE_URL = os.getenv("VLR_BASE_URL", "https://www.vlr.gg")
+ORACLE_ELIXIR_BASE_URL = os.getenv("ORACLE_ELIXIR_BASE_URL", "https://oracleselixir.com")
+OPENDOTA_API_URL = os.getenv("OPENDOTA_API_URL", "https://api.opendota.com/api")
+
+# Paper Trading
+PAPER_TRADING_STAKE = float(os.getenv("PAPER_TRADING_STAKE", "100"))
+PAPER_TRADING_CURRENCY = os.getenv("PAPER_TRADING_CURRENCY", "BRL")
+
+# Model Settings
+MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.55"))
+MIN_EDGE = float(os.getenv("MIN_EDGE", "0.03"))
+MAX_EDGE = float(os.getenv("MAX_EDGE", "0.20"))
+
+# Kelly Criterion
+KELLY_FRACTION = float(os.getenv("KELLY_FRACTION", "0.25"))
+
+# Scheduler
+FETCH_ODDS_INTERVAL_MINUTES = int(os.getenv("FETCH_ODDS_INTERVAL_MINUTES", "15"))
+GENERATE_BETS_INTERVAL_MINUTES = int(os.getenv("GENERATE_BETS_INTERVAL_MINUTES", "30"))
+FETCH_RESULTS_INTERVAL_MINUTES = int(os.getenv("FETCH_RESULTS_INTERVAL_MINUTES", "60"))
+DAILY_REPORT_HOUR = int(os.getenv("DAILY_REPORT_HOUR", "23"))
+
+# Debug
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
