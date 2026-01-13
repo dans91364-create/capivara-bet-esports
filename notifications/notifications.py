@@ -1,6 +1,6 @@
 """Notification system."""
 from typing import List, Dict
-from telegram.bot import telegram_bot
+from notifications.bot import telegram_bot
 from utils.logger import log
 
 
