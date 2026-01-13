@@ -36,10 +36,7 @@ class Bet365Scraper(BaseScraper):
         Raises:
             NotImplementedError: This scraper is disabled and awaiting configuration
         """
-        raise NotImplementedError(
-            "Bet365 scraper is disabled. "
-            "Awaiting configuration and implementation of web scraping logic."
-        )
+        self._raise_not_implemented("get_esports_odds", "configuration")
     
     async def get_live_events(self) -> List[Dict]:
         """Fetch live esports events from Bet365.
@@ -50,10 +47,7 @@ class Bet365Scraper(BaseScraper):
         Raises:
             NotImplementedError: This scraper is disabled and awaiting configuration
         """
-        raise NotImplementedError(
-            "Bet365 scraper is disabled. "
-            "Awaiting configuration and implementation of web scraping logic."
-        )
+        self._raise_not_implemented("get_live_events", "configuration")
     
     async def health_check(self) -> bool:
         """Check if Bet365 is accessible.

@@ -21,6 +21,7 @@ class StakeScraper(BaseScraper):
         self.bookmaker_type = BookmakerType.CRYPTO
         self.integration_type = IntegrationType.API
         self.base_url = "https://stake.com"
+        # TODO: Verify and update the actual Stake.com API endpoint from documentation
         self.api_url = "https://api.stake.com"  # Placeholder - check actual API endpoint
         self.requires_auth = False
     

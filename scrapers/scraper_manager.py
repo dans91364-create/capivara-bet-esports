@@ -136,13 +136,15 @@ class ScraperManager:
         comparisons = []
         for event_key, event_data in events_map.items():
             if len(event_data["bookmakers"]) > 1:  # Only include events with multiple bookmakers
-                # Calculate best odds
+                # Calculate best odds (filter out None values)
                 best_home = max(
-                    (bm["odds_home"] for bm in event_data["bookmakers"].values()),
+                    (bm["odds_home"] for bm in event_data["bookmakers"].values() 
+                     if bm["odds_home"] is not None),
                     default=0
                 )
                 best_away = max(
-                    (bm["odds_away"] for bm in event_data["bookmakers"].values()),
+                    (bm["odds_away"] for bm in event_data["bookmakers"].values() 
+                     if bm["odds_away"] is not None),
                     default=0
                 )
                 

@@ -22,6 +22,7 @@ class SpartansScraper(BaseScraper):
         self.enabled = False
         self.bookmaker_type = BookmakerType.CRYPTO
         self.integration_type = IntegrationType.SCRAPER
+        # TODO: Verify the correct URL for Spartans betting platform
         self.base_url = "https://spartans.bet"  # Verify actual URL
         self.requires_auth = False
     

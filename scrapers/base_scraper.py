@@ -79,5 +79,20 @@ class BaseScraper(ABC):
         """
         pass
     
+    def _raise_not_implemented(self, method_name: str, reason: str = "awaiting configuration"):
+        """Helper method for disabled scrapers to raise consistent NotImplementedError.
+        
+        Args:
+            method_name: Name of the method being called
+            reason: Reason for being disabled (e.g., "awaiting configuration", "needs API verification")
+        
+        Raises:
+            NotImplementedError: Always raised with a formatted message
+        """
+        raise NotImplementedError(
+            f"{self.name} scraper is disabled. "
+            f"Awaiting {reason} and implementation of {self.integration_type.value} logic."
+        )
+    
     def __repr__(self) -> str:
         return f"{self.name}(enabled={self.enabled}, type={self.integration_type.value})"
