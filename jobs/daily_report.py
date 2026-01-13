@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 from utils.logger import log
 from betting.analyzer import BetAnalyzer
-from telegram.notifications import notification_system
+from notifications.notifications import notification_system
 from database.db import get_db
 from database.models import Bet
 

@@ -2,7 +2,7 @@
 from utils.logger import log
 from scrapers.results import ResultsScraper
 from betting.settler import BetSettler
-from telegram.notifications import notification_system
+from notifications.notifications import notification_system
 
 
 def fetch_results_job():

@@ -2,7 +2,7 @@
 from utils.logger import log
 from edge.finder import EdgeFinder
 from betting.generator import BetGenerator
-from telegram.notifications import notification_system
+from notifications.notifications import notification_system
 
 
 def generate_bets_job():
