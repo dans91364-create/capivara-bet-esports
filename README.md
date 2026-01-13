@@ -1,25 +1,26 @@
 # 🎮 Capivara Bet Esports
 
-Sistema de apostas em esports com análise avançada.
+Sistema de apostas em esports com análise avançada e paper trading.
 
-## Status
+## 🚧 Em Desenvolvimento
 
-🚧 Em desenvolvimento - v1.0 Test Version
+Versão 1.0 Test Version em construção.
 
-## Jogos Suportados
+## 🎯 Objetivo
+
+Encontrar edge em apostas de esports através de:
+- Múltiplos modelos preditivos
+- Análise de múltiplas casas de apostas
+- Tracking de CLV (Closing Line Value)
+- Dashboard interativo
+
+## 🎮 Jogos Suportados
 
 - Counter-Strike 2 (CS2)
 - League of Legends (LoL)
 - Dota 2
 - Valorant
 
-## Tecnologias
+## 📊 Status
 
-- Python
-- Streamlit (Dashboard)
-- SQLAlchemy (Database)
-- Telegram Bot (Notificações)
-
----
-
-**Versão:** 1.0 Test Version
+🔄 Aguardando PR inicial...
