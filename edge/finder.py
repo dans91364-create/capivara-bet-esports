@@ -31,6 +31,7 @@ class EdgeFinder:
             Edge dictionary or None if no edge
         """
         if model_prob < self.min_confidence:
+            log.debug(f"Rejected: confidence {model_prob:.2%} below minimum {self.min_confidence:.2%}")
             return None
         
         market_prob = calculate_implied_probability(market_odds)

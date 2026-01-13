@@ -7,13 +7,15 @@ from config.settings import KELLY_FRACTION
 class KellyCriterion:
     """Kelly Criterion for optimal bet sizing."""
     
-    def __init__(self, kelly_fraction: float = KELLY_FRACTION):
+    def __init__(self, kelly_fraction: float = KELLY_FRACTION, max_bet_percent: float = 0.1):
         """Initialize Kelly Criterion.
         
         Args:
             kelly_fraction: Fraction of Kelly to use (0-1, typically 0.25)
+            max_bet_percent: Maximum percentage of bankroll per bet (default 0.1 = 10%)
         """
         self.kelly_fraction = kelly_fraction
+        self.max_bet_percent = max_bet_percent
     
     def calculate_stake(
         self, bankroll: float, probability: float, odds: float
@@ -52,7 +54,7 @@ class KellyCriterion:
             return 0.0
         
         # Cap at maximum percentage of bankroll
-        fractional_kelly = min(fractional_kelly, 0.1)  # Max 10% of bankroll
+        fractional_kelly = min(fractional_kelly, self.max_bet_percent)
         
         return bankroll * fractional_kelly
     

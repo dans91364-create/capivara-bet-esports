@@ -1,7 +1,7 @@
 """Bookmaker registry - auto-discovery and registration."""
 import importlib
 import pkgutil
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Optional
 from utils.logger import log
 from bookmakers.base import BookmakerBase
 
