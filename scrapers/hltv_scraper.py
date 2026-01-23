@@ -10,8 +10,8 @@ from scrapers.base import ScraperBase
 from config.settings import HLTV_BASE_URL
 from utils.logger import log
 
-# Import the new unified API
-from scrapers.hltv import HLTVUnified
+# Import the new unified API from the hltv module
+from scrapers.hltv.hltv_unified import HLTVUnified
 
 
 class HLTVScraper(ScraperBase):
@@ -34,7 +34,14 @@ class HLTVScraper(ScraperBase):
         """
         try:
             # Use the new async API
-            return asyncio.run(self._fetch_matches_async())
+            matches = asyncio.run(self._fetch_matches_async())
+            
+            # If no matches were fetched, fall back to demo data
+            if not matches:
+                log.warning("No matches fetched from HLTV. Using demo data.")
+                return self._get_demo_matches()
+            
+            return matches
         except Exception as e:
             log.warning(f"HLTV scraping failed: {e}. Using demo data.")
             return self._get_demo_matches()
