@@ -216,6 +216,10 @@ class HLTVUnified:
     async def health_check(self) -> Dict[str, bool]:
         """Check health of both API backends.
         
+        Note: This checks if the backend code is functioning, not if HLTV.org
+        is accessible. Network errors are handled gracefully by returning empty
+        lists, so health will be True even when HLTV.org is unreachable.
+        
         Returns:
             Dictionary with health status of each backend
         """
