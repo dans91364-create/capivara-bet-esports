@@ -80,6 +80,9 @@ class HLTVBase(ABC):
     
     This interface defines the contract that all HLTV data sources
     (SocksPls, Gigobyte adapter) must implement.
+    
+    Note: This defines the MINIMUM required interface. Implementations
+    may provide additional methods beyond this interface.
     """
     
     @abstractmethod

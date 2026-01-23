@@ -6,7 +6,7 @@ from utils.logger import log
 from edge.finder import EdgeFinder
 from betting.generator import BetGenerator
 from notifications.notifications import notification_system
-from scrapers.hltv import HLTVScraper
+from scrapers.hltv_scraper import HLTVScraper
 from scrapers.vlr import VLRScraper
 from database.db import get_db
 from database.models import Match, Prediction

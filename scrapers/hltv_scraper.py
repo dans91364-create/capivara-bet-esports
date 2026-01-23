@@ -31,6 +31,11 @@ class HLTVScraper(ScraperBase):
         
         Returns:
             List of match dictionaries
+            
+        Note:
+            Uses asyncio.run() to bridge sync/async. This is safe for this
+            use case as HLTVScraper is designed for synchronous usage and
+            won't be called from within an existing event loop.
         """
         try:
             # Use the new async API

@@ -3,6 +3,10 @@
 Adapter for gigobyte/HLTV functionality that doesn't exist in SocksPls,
 ported to Python. Provides advanced features like map stats, events,
 and player statistics.
+
+Note: This adapter intentionally does NOT implement HLTVBase as it provides
+complementary functionality beyond the base interface. It is designed to work
+alongside SocksPlsAPI (which does implement HLTVBase) via the unified API.
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime
