@@ -31,6 +31,38 @@ class NBASeasonPopulator:
         self.season = season
         self.collector = ESPNNBACollector()
         self.db = get_db_session()
+    
+    @staticmethod
+    def _safe_int(value, default=0):
+        """Safely convert value to int.
+        
+        Args:
+            value: Value to convert
+            default: Default value if conversion fails
+            
+        Returns:
+            Integer value or default
+        """
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+    
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        """Safely convert value to float.
+        
+        Args:
+            value: Value to convert
+            default: Default value if conversion fails
+            
+        Returns:
+            Float value or default
+        """
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return default
         
     async def populate_season(self, days_back: int = 120):
         """Populate entire season data.
@@ -251,31 +283,31 @@ class NBASeasonPopulator:
                     
                     # Parse field goals (e.g., "8-16" -> made=8, attempted=16)
                     fg = str(stats_row.get('field_goals', '0-0')).split('-')
-                    fg_made = int(fg[0]) if len(fg) > 0 else 0
-                    fg_attempted = int(fg[1]) if len(fg) > 1 else 0
+                    fg_made = self._safe_int(fg[0] if len(fg) > 0 else 0)
+                    fg_attempted = self._safe_int(fg[1] if len(fg) > 1 else 0)
                     
                     # Parse 3-pointers
                     three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
-                    three_made = int(three_pt[0]) if len(three_pt) > 0 else 0
-                    three_attempted = int(three_pt[1]) if len(three_pt) > 1 else 0
+                    three_made = self._safe_int(three_pt[0] if len(three_pt) > 0 else 0)
+                    three_attempted = self._safe_int(three_pt[1] if len(three_pt) > 1 else 0)
                     
                     # Parse free throws
                     ft = str(stats_row.get('free_throws', '0-0')).split('-')
-                    ft_made = int(ft[0]) if len(ft) > 0 else 0
-                    ft_attempted = int(ft[1]) if len(ft) > 1 else 0
+                    ft_made = self._safe_int(ft[0] if len(ft) > 0 else 0)
+                    ft_attempted = self._safe_int(ft[1] if len(ft) > 1 else 0)
                     
                     # Extract numeric stats
-                    points = int(stats_row.get('points', 0))
-                    rebounds = int(stats_row.get('rebounds', 0))
-                    assists = int(stats_row.get('assists', 0))
-                    blocks = int(stats_row.get('blocks', 0))
-                    steals = int(stats_row.get('steals', 0))
-                    turnovers = int(stats_row.get('turnovers', 0))
-                    fouls = int(stats_row.get('personal_fouls', 0))
+                    points = self._safe_int(stats_row.get('points', 0))
+                    rebounds = self._safe_int(stats_row.get('rebounds', 0))
+                    assists = self._safe_int(stats_row.get('assists', 0))
+                    blocks = self._safe_int(stats_row.get('blocks', 0))
+                    steals = self._safe_int(stats_row.get('steals', 0))
+                    turnovers = self._safe_int(stats_row.get('turnovers', 0))
+                    fouls = self._safe_int(stats_row.get('personal_fouls', 0))
                     
                     # Parse minutes (e.g., "37" -> 37)
                     minutes_str = str(stats_row.get('minutes', '0'))
-                    minutes = int(minutes_str.split(':')[0]) if ':' in minutes_str else int(minutes_str) if minutes_str.isdigit() else 0
+                    minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
                     
                     stat_dict = {
                         'game_id': game_id,
@@ -287,13 +319,13 @@ class NBASeasonPopulator:
                         'points': points,
                         'field_goals_made': fg_made,
                         'field_goals_attempted': fg_attempted,
-                        'fg_percentage': float(stats_row.get('fg_percentage', 0)),
+                        'fg_percentage': self._safe_float(stats_row.get('fg_percentage', 0)),
                         'three_pointers_made': three_made,
                         'three_pointers_attempted': three_attempted,
-                        'three_percentage': float(stats_row.get('three_percentage', 0)),
+                        'three_percentage': self._safe_float(stats_row.get('three_percentage', 0)),
                         'free_throws_made': ft_made,
                         'free_throws_attempted': ft_attempted,
-                        'ft_percentage': float(stats_row.get('ft_percentage', 0)),
+                        'ft_percentage': self._safe_float(stats_row.get('ft_percentage', 0)),
                         'rebounds_total': rebounds,
                         'assists': assists,
                         'steals': steals,
@@ -328,31 +360,31 @@ class NBASeasonPopulator:
                     
                     # Parse field goals
                     fg = str(stats_row.get('field_goals', '0-0')).split('-')
-                    fg_made = int(fg[0]) if len(fg) > 0 else 0
-                    fg_attempted = int(fg[1]) if len(fg) > 1 else 0
+                    fg_made = self._safe_int(fg[0] if len(fg) > 0 else 0)
+                    fg_attempted = self._safe_int(fg[1] if len(fg) > 1 else 0)
                     
                     # Parse 3-pointers
                     three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
-                    three_made = int(three_pt[0]) if len(three_pt) > 0 else 0
-                    three_attempted = int(three_pt[1]) if len(three_pt) > 1 else 0
+                    three_made = self._safe_int(three_pt[0] if len(three_pt) > 0 else 0)
+                    three_attempted = self._safe_int(three_pt[1] if len(three_pt) > 1 else 0)
                     
                     # Parse free throws
                     ft = str(stats_row.get('free_throws', '0-0')).split('-')
-                    ft_made = int(ft[0]) if len(ft) > 0 else 0
-                    ft_attempted = int(ft[1]) if len(ft) > 1 else 0
+                    ft_made = self._safe_int(ft[0] if len(ft) > 0 else 0)
+                    ft_attempted = self._safe_int(ft[1] if len(ft) > 1 else 0)
                     
                     # Extract numeric stats
-                    points = int(stats_row.get('points', 0))
-                    rebounds = int(stats_row.get('rebounds', 0))
-                    assists = int(stats_row.get('assists', 0))
-                    blocks = int(stats_row.get('blocks', 0))
-                    steals = int(stats_row.get('steals', 0))
-                    turnovers = int(stats_row.get('turnovers', 0))
-                    fouls = int(stats_row.get('personal_fouls', 0))
+                    points = self._safe_int(stats_row.get('points', 0))
+                    rebounds = self._safe_int(stats_row.get('rebounds', 0))
+                    assists = self._safe_int(stats_row.get('assists', 0))
+                    blocks = self._safe_int(stats_row.get('blocks', 0))
+                    steals = self._safe_int(stats_row.get('steals', 0))
+                    turnovers = self._safe_int(stats_row.get('turnovers', 0))
+                    fouls = self._safe_int(stats_row.get('personal_fouls', 0))
                     
                     # Parse minutes
                     minutes_str = str(stats_row.get('minutes', '0'))
-                    minutes = int(minutes_str.split(':')[0]) if ':' in minutes_str else int(minutes_str) if minutes_str.isdigit() else 0
+                    minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
                     
                     stat_dict = {
                         'game_id': game_id,
@@ -364,13 +396,13 @@ class NBASeasonPopulator:
                         'points': points,
                         'field_goals_made': fg_made,
                         'field_goals_attempted': fg_attempted,
-                        'fg_percentage': float(stats_row.get('fg_percentage', 0)),
+                        'fg_percentage': self._safe_float(stats_row.get('fg_percentage', 0)),
                         'three_pointers_made': three_made,
                         'three_pointers_attempted': three_attempted,
-                        'three_percentage': float(stats_row.get('three_percentage', 0)),
+                        'three_percentage': self._safe_float(stats_row.get('three_percentage', 0)),
                         'free_throws_made': ft_made,
                         'free_throws_attempted': ft_attempted,
-                        'ft_percentage': float(stats_row.get('ft_percentage', 0)),
+                        'ft_percentage': self._safe_float(stats_row.get('ft_percentage', 0)),
                         'rebounds_total': rebounds,
                         'assists': assists,
                         'steals': steals,
