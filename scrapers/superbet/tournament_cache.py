@@ -1,7 +1,7 @@
 """Tournament cache with TTL for Superbet API."""
 
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from threading import Lock
 
@@ -10,7 +10,7 @@ from threading import Lock
 class CacheEntry:
     """Represents a cache entry with TTL."""
     
-    data: any
+    data: Any
     timestamp: float
     ttl: int  # seconds
     
@@ -33,7 +33,7 @@ class TournamentCache:
         self._cache: Dict[str, CacheEntry] = {}
         self._lock = Lock()
     
-    def get(self, key: str) -> Optional[any]:
+    def get(self, key: str) -> Optional[Any]:
         """
         Get value from cache if not expired.
         
@@ -52,7 +52,7 @@ class TournamentCache:
                 del self._cache[key]
             return None
     
-    def set(self, key: str, value: any, ttl: Optional[int] = None):
+    def set(self, key: str, value: Any, ttl: Optional[int] = None):
         """
         Set value in cache with TTL.
         

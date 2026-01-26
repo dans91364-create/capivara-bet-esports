@@ -141,11 +141,17 @@ def show():
         - **Crítico**: > 1000ms
         """)
     
-    # Auto-refresh logic
+    # Auto-refresh logic using Streamlit's rerun with time check
     if auto_refresh:
-        import time
-        time.sleep(60)
-        st.rerun()
+        # Store last refresh time in session state
+        if 'api_status_last_refresh' not in st.session_state:
+            st.session_state.api_status_last_refresh = datetime.now()
+        
+        # Check if 60 seconds have passed
+        time_diff = (datetime.now() - st.session_state.api_status_last_refresh).total_seconds()
+        if time_diff >= 60:
+            st.session_state.api_status_last_refresh = datetime.now()
+            st.rerun()
     
     # Last update
     st.caption(f"Última verificação: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")

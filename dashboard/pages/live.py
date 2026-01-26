@@ -93,11 +93,17 @@ def show():
     # Last update time
     st.caption(f"Última atualização: {datetime.now().strftime('%H:%M:%S')}")
     
-    # Auto-refresh logic
+    # Auto-refresh logic using Streamlit's rerun with time check
     if auto_refresh:
-        import time
-        time.sleep(30)
-        st.rerun()
+        # Store last refresh time in session state
+        if 'last_refresh_time' not in st.session_state:
+            st.session_state.last_refresh_time = datetime.now()
+        
+        # Check if 30 seconds have passed
+        time_diff = (datetime.now() - st.session_state.last_refresh_time).total_seconds()
+        if time_diff >= 30:
+            st.session_state.last_refresh_time = datetime.now()
+            st.rerun()
 
 
 async def fetch_live_matches(game_filter: str) -> List[Dict[str, Any]]:

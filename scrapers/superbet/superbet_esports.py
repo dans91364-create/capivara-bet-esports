@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import date, datetime, timedelta
 
 from .superbet_client import SuperbetClient
