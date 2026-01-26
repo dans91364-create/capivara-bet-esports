@@ -1,86 +1,61 @@
-"""Example usage of the LoL Esports API integration.
-
-This script demonstrates how to use the new LoL scraper module
-to fetch match data, player stats, and other esports information.
-"""
-
+"""Example usage of the LoL Esports API integration."""
 import asyncio
-from scrapers.lol import LoLUnified
+from scrapers.lol.lol_unified import LoLUnified
 
 
 async def main():
-    """Demonstrate LoL API usage."""
-    print("=== League of Legends Esports API Integration Demo ===\n")
+    print("=== League of Legends Esports API Demo ===\n")
     
-    # Initialize the unified API
     lol = LoLUnified()
     
-    # 1. Get available leagues
-    print("1. Fetching available leagues...")
     try:
+        # 1. Get leagues
+        print("1. Fetching available leagues...")
         leagues = await lol.get_leagues()
-        if leagues:
-            print(f"   Found {len(leagues)} leagues:")
-            for league in leagues[:5]:  # Show first 5
-                print(f"   - {league.name} ({league.slug}) - {league.region}")
+        print(f"   Found {len(leagues)} leagues:")
+        for league in leagues[:10]:
+            print(f"   - {league.name} ({league.slug}) - {league.region}")
+        
+        # 2. Get live matches
+        print("\n2. Fetching LIVE matches...")
+        live = await lol.get_live_matches()
+        if live:
+            print(f"   🔴 {len(live)} matches LIVE NOW:")
+            for match in live:
+                print(f"      [{match.league_name}] {match.team1_name} vs {match.team2_name}")
         else:
-            print("   No leagues found (API may be unavailable)")
-    except Exception as e:
-        print(f"   Error fetching leagues: {e}")
-    
-    print()
-    
-    # 2. Get upcoming matches for a specific league
-    print("2. Fetching upcoming LCK matches...")
-    try:
-        matches = await lol.get_upcoming_matches("lck")
-        if matches:
-            print(f"   Found {len(matches)} upcoming matches:")
-            for match in matches[:3]:  # Show first 3
-                print(f"   - {match.team1.name} vs {match.team2.name}")
-                print(f"     League: {match.league}, Best of {match.best_of}")
-                print(f"     Date: {match.date}")
+            print("   No live matches right now")
+        
+        # 3. Get upcoming matches
+        print("\n3. Fetching upcoming matches...")
+        upcoming = await lol.get_upcoming_matches()
+        if upcoming:
+            print(f"   Found {len(upcoming)} upcoming matches:")
+            for match in upcoming[:10]:
+                print(f"   - [{match.league_name}] {match.team1_name} vs {match.team2_name} ({match.block_name})")
         else:
             print("   No upcoming matches found")
-    except Exception as e:
-        print(f"   Error fetching matches: {e}")
-    
-    print()
-    
-    # 3. Get tournaments for a league
-    print("3. Fetching LCK tournaments...")
-    try:
-        tournaments = await lol.get_tournaments("lck")
-        if tournaments:
-            print(f"   Found {len(tournaments)} tournaments:")
-            for tournament in tournaments[:3]:  # Show first 3
-                print(f"   - {tournament.name}")
-                if tournament.start_date:
-                    print(f"     Start: {tournament.start_date}")
-        else:
-            print("   No tournaments found")
-    except Exception as e:
-        print(f"   Error fetching tournaments: {e}")
-    
-    print()
-    
-    # 4. Demonstrate Oracle's Elixir integration
-    print("4. Oracle's Elixir integration (requires data download)...")
-    print("   Note: This may take time on first run as it downloads CSV data")
-    try:
-        # Download data first
-        await lol.oracle.download_data()
-        print("   Data download initiated")
         
-        # Example: Get player stats (will only work if data is available)
-        # player = await lol.get_player_stats("Faker", "LCK")
-        # if player:
-        #     print(f"   Faker stats: KDA: {player.kda:.2f}, GPM: {player.gold_per_min:.2f}")
-    except Exception as e:
-        print(f"   Oracle's Elixir note: {e}")
+        # 4. Get recent completed matches
+        print("\n4. Fetching completed matches...")
+        completed = await lol.get_completed_matches()
+        if completed:
+            print(f"   Found {len(completed)} completed matches:")
+            for match in completed[:10]:
+                print(f"   - [{match.league_name}] {match.team1_name} {match.team1_wins}-{match.team2_wins} {match.team2_name}")
+        else:
+            print("   No completed matches found")
+        
+        # 5. Get LEC schedule specifically
+        print("\n5. Fetching LEC schedule...")
+        lec_matches = await lol.get_league_schedule("lec")
+        lec_upcoming = [m for m in lec_matches if m.state == "unstarted"]
+        print(f"   LEC has {len(lec_upcoming)} upcoming matches")
+        
+    finally:
+        await lol.close()
     
-    print()
-    print("=== Demo Complete ===")
+    print("\n=== Demo Complete ===")
 
 
 if __name__ == "__main__":
