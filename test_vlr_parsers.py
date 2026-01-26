@@ -24,8 +24,8 @@ def test_valorant_result_with_round_info():
     api_data = {
         "team1": "Sentinels",
         "team2": "LOUD",
-        "score1": 2,
-        "score2": 1,
+        "score1": "2",
+        "score2": "1",
         "flag1": "USA",
         "flag2": "BRA",
         "time_completed": "2 hours ago",
@@ -39,8 +39,8 @@ def test_valorant_result_with_round_info():
     result = safe_parse_dataclass(ValorantResult, api_data)
     assert result.team1 == "Sentinels"
     assert result.team2 == "LOUD"
-    assert result.score1 == 2
-    assert result.score2 == 1
+    assert result.score1 == "2"
+    assert result.score2 == "1"
     assert result.round_info == "13-11, 13-8"
     print("✓ ValorantResult handles round_info correctly")
     
@@ -138,7 +138,7 @@ def test_dataclass_with_default_values():
     # Create with no data (all defaults)
     result = ValorantResult()
     assert result.team1 == ""
-    assert result.score1 == 0
+    assert result.score1 == ""
     assert result.round_info is None
     
     print("✓ Dataclasses work correctly with default values")

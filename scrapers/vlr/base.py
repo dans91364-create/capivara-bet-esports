@@ -19,6 +19,9 @@ class ValorantTeam:
     team: Optional[str] = None  # Sometimes the API sends the name here
     region: Optional[str] = None
     url: Optional[str] = None
+    last_played: Optional[str] = None
+    last_played_team: Optional[str] = None
+    last_played_team_logo: Optional[str] = None
     
     def __post_init__(self):
         """If 'team' was passed but 'name' was not, use 'team' as 'name'."""
@@ -48,6 +51,14 @@ class ValorantPlayer:
     player: Optional[str] = None  # Sometimes the API sends the name here
     country: Optional[str] = None
     team: Optional[str] = None
+    rounds_played: Optional[str] = None
+    clutches: Optional[str] = None
+    clutches_lost: Optional[str] = None
+    kills: Optional[str] = None
+    deaths: Optional[str] = None
+    assists: Optional[str] = None
+    fk: Optional[str] = None
+    fd: Optional[str] = None
     
     def __post_init__(self):
         """Use alternative fields as fallback."""
@@ -73,6 +84,8 @@ class ValorantMatch:
     # Extra API fields
     eta: Optional[str] = None
     tournament_icon: Optional[str] = None
+    score1: Optional[str] = None
+    score2: Optional[str] = None
 
 
 @dataclass
@@ -81,8 +94,8 @@ class ValorantResult:
     
     team1: str = ""
     team2: str = ""
-    score1: int = 0
-    score2: int = 0
+    score1: str = ""
+    score2: str = ""
     flag1: str = ""
     flag2: str = ""
     time_completed: str = ""
@@ -92,6 +105,7 @@ class ValorantResult:
     # Extra API fields
     round_info: Optional[str] = None
     tournament_icon: Optional[str] = None
+    eta: Optional[str] = None
 
 
 @dataclass
