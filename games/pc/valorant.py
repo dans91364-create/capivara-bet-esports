@@ -1,12 +1,14 @@
 """Valorant game implementation."""
 from typing import Dict, List, Optional
+import asyncio
 from games.base import GameBase
+from scrapers.vlr import VLRUnified
 
 
 class Valorant(GameBase):
     """Valorant implementation.
     
-    Data source: VLR.gg
+    Data source: VLR.gg via vlrggapi
     Features:
     - Map-based gameplay (BO3, BO5)
     - Agent selection (similar to draft)
@@ -23,6 +25,7 @@ class Valorant(GameBase):
             "Ascent", "Bind", "Haven", "Split", "Icebox",
             "Breeze", "Fracture", "Pearl", "Lotus", "Sunset"
         ]
+        self._vlr = VLRUnified()
     
     def get_upcoming_matches(self) -> List[Dict]:
         """Fetch upcoming Valorant matches from VLR.
@@ -30,8 +33,25 @@ class Valorant(GameBase):
         Returns:
             List of match dictionaries
         """
-        # TODO: Implement VLR scraping
-        return []
+        try:
+            matches = asyncio.run(self._vlr.get_upcoming_matches())
+            
+            # Convert to game-standard format
+            return [
+                {
+                    'game': 'Valorant',
+                    'team1': m.team1,
+                    'team2': m.team2,
+                    'tournament': m.match_event,
+                    'series': m.match_series,
+                    'time_until': m.time_until_match,
+                    'url': m.match_page,
+                }
+                for m in matches
+            ]
+        except Exception as e:
+            # Fallback handled by VLRUnified
+            return []
     
     def get_match_details(self, match_id: str) -> Optional[Dict]:
         """Get Valorant match details from VLR.
@@ -42,7 +62,7 @@ class Valorant(GameBase):
         Returns:
             Match details dictionary
         """
-        # TODO: Implement VLR scraping
+        # TODO: Implement detailed match fetching via VLR scraping
         return None
     
     def get_team_stats(self, team_name: str) -> Optional[Dict]:
@@ -54,7 +74,8 @@ class Valorant(GameBase):
         Returns:
             Team statistics
         """
-        # TODO: Implement VLR scraping
+        # TODO: Implement team stats via rankings
+        # Could use get_all_rankings and search for team
         return None
     
     def get_supported_markets(self) -> List[str]:
@@ -71,3 +92,15 @@ class Valorant(GameBase):
             "total_rounds",
             "first_blood",
         ]
+    
+    def close(self):
+        """Close VLR API resources.
+        
+        Call this method when done using the Valorant game instance to clean up resources.
+        """
+        try:
+            asyncio.run(self._vlr.close())
+        except Exception:
+            pass
+
+
