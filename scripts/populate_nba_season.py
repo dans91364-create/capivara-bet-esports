@@ -76,8 +76,8 @@ class NBASeasonPopulator:
         """
         try:
             parts = str(value).split('-')
-            made = int(parts[0]) if len(parts) > 0 else 0
-            attempted = int(parts[1]) if len(parts) > 1 else 0
+            made = int(parts[0]) if len(parts) > 0 and parts[0] else 0
+            attempted = int(parts[1]) if len(parts) > 1 and parts[1] else 0
             return made, attempted
         except (ValueError, TypeError):
             return 0, 0
@@ -110,9 +110,15 @@ class NBASeasonPopulator:
         turnovers = self._safe_int(stats_row.get('turnovers', 0))
         fouls = self._safe_int(stats_row.get('personal_fouls', 0))
         
-        # Parse minutes
-        minutes_str = str(stats_row.get('minutes', '0'))
-        minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
+        # Parse minutes (handles formats like "37" or "37:30")
+        try:
+            minutes_str = str(stats_row.get('minutes', '0'))
+            if ':' in minutes_str:
+                minutes = self._safe_int(minutes_str.split(':')[0])
+            else:
+                minutes = self._safe_int(minutes_str)
+        except (ValueError, IndexError, AttributeError):
+            minutes = 0
         
         return {
             'game_id': game_id,
