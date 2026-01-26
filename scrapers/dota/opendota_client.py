@@ -2,6 +2,7 @@
 
 import aiohttp
 import asyncio
+import time
 from typing import List, Dict, Optional
 from .base import (
     DotaHero,
@@ -24,6 +25,7 @@ class OpenDotaClient:
     """
     
     BASE_URL = "https://api.opendota.com/api"
+    RATE_LIMIT_PER_MINUTE = 60
     
     def __init__(self, api_key: str = None):
         """Initialize the OpenDota client.
@@ -33,8 +35,7 @@ class OpenDotaClient:
         """
         self.api_key = api_key
         self.session = None
-        self._request_count = 0
-        self._last_request_time = 0
+        self._request_times = []
     
     async def _get(self, endpoint: str, params: dict = None) -> dict:
         """Make a GET request with rate limiting.
@@ -49,7 +50,7 @@ class OpenDotaClient:
         if not self.session:
             self.session = aiohttp.ClientSession()
         
-        # Rate limiting: 60 requests/minute
+        # Rate limiting: 60 requests/minute using sliding window
         await self._rate_limit()
         
         url = f"{self.BASE_URL}{endpoint}"
@@ -62,9 +63,29 @@ class OpenDotaClient:
             return await response.json()
     
     async def _rate_limit(self):
-        """Implement rate limiting of 60 req/min."""
-        # Minimum 100ms between requests to stay under 60/min limit
-        await asyncio.sleep(0.1)
+        """Implement rate limiting using sliding window approach."""
+        current_time = time.time()
+        
+        # Remove requests older than 60 seconds
+        self._request_times = [
+            t for t in self._request_times 
+            if current_time - t < 60
+        ]
+        
+        # If we've hit the limit, wait until the oldest request expires
+        if len(self._request_times) >= self.RATE_LIMIT_PER_MINUTE:
+            sleep_time = 60 - (current_time - self._request_times[0]) + 0.1
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
+            # Clean up again after sleeping
+            current_time = time.time()
+            self._request_times = [
+                t for t in self._request_times 
+                if current_time - t < 60
+            ]
+        
+        # Record this request
+        self._request_times.append(current_time)
     
     # === Pro Matches ===
     
@@ -285,7 +306,13 @@ class OpenDotaClient:
             List of DotaPlayer objects
         """
         data = await self._get(f"/teams/{team_id}/players")
-        return [self._parse_player(p) for p in data]
+        # Team players endpoint returns simplified player data
+        return [DotaPlayer(
+            account_id=p.get('account_id', 0),
+            name=p.get('name', ''),
+            persona_name=p.get('personaname', ''),
+            is_pro=p.get('is_current_team_member', False)
+        ) for p in data]
     
     def _parse_team(self, data: Dict) -> DotaTeam:
         """Parse team data from API response.

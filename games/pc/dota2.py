@@ -74,21 +74,29 @@ class Dota2(GameBase):
                 },
                 'players': match.players,
             }
-        except Exception:
+        except (ValueError, KeyError, TypeError, asyncio.TimeoutError):
             return None
     
-    def get_team_stats(self, team_id: int) -> Optional[Dict]:
+    def get_team_stats(self, team_name: str) -> Optional[Dict]:
         """Get Dota 2 team statistics.
         
         Args:
-            team_id: Team ID
+            team_name: Team name or team ID as string
             
         Returns:
             Team statistics
         """
         try:
+            # Try to parse as team_id first, fall back to name lookup
+            try:
+                team_id = int(team_name)
+            except ValueError:
+                # If not a number, we'd need to search by name
+                # For now, return None as OpenDota API primarily uses IDs
+                return None
+            
             return asyncio.run(self._dota.get_team_stats(team_id))
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return None
     
     def get_draft_analysis(self, match_id: str) -> Optional[Dict]:
@@ -125,7 +133,7 @@ class Dota2(GameBase):
                     'bans': [hero_names.get(h, f'Hero {h}') for h in match.dire_bans],
                 },
             }
-        except Exception:
+        except (ValueError, KeyError, TypeError, asyncio.TimeoutError):
             return None
     
     def _format_series_type(self, series_type: Optional[int]) -> str:

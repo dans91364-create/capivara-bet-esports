@@ -89,7 +89,7 @@ class OpenDotaScraper(ScraperBase):
                 'dire_bans': match.dire_bans,
                 'players': match.players,
             }
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return None
     
     def close(self):
