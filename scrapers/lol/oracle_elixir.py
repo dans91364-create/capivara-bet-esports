@@ -193,13 +193,16 @@ class OracleElixirParser:
         
         # Group by champion and calculate stats
         if 'champion' in champ_data.columns:
-            champion_stats = champ_data.groupby('champion').agg({
-                'gameid': 'count',  # Games played
-                'result': 'mean',  # Win rate
-                'ban': 'sum',  # Times banned
-            }).to_dict('index')
+            # Calculate games played and win rate
+            stats_dict = {}
+            for champ_name, group in champ_data.groupby('champion'):
+                stats_dict[champ_name] = {
+                    'games_played': len(group),
+                    'win_rate': group['result'].mean() if 'result' in group.columns else 0.0,
+                    'times_banned': group['ban'].sum() if 'ban' in group.columns else 0  # Total games where banned
+                }
             
-            return champion_stats
+            return stats_dict
         
         return {}
     

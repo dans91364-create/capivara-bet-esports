@@ -320,8 +320,8 @@ class LoLEsportsClient:
                 duration=str(game_data.get("gameDuration", 0)),
                 blue_team=blue_team.get("name", ""),
                 red_team=red_team.get("name", ""),
-                blue_picks=[p.get("championId", "") for p in blue_team.get("bans", [])],
-                red_picks=[p.get("championId", "") for p in red_team.get("bans", [])],
+                blue_picks=[p.get("championId", "") for p in blue_team.get("picks", [])],
+                red_picks=[p.get("championId", "") for p in red_team.get("picks", [])],
                 blue_bans=[b.get("championId", "") for b in blue_team.get("bans", [])],
                 red_bans=[b.get("championId", "") for b in red_team.get("bans", [])]
             )
@@ -347,6 +347,6 @@ class LoLEsportsClient:
             # Handle ISO format with Z timezone
             if datetime_str.endswith('Z'):
                 datetime_str = datetime_str[:-1] + '+00:00'
-            return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+            return datetime.fromisoformat(datetime_str)
         except Exception:
             return datetime.now()
