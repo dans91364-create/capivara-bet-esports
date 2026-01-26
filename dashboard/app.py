@@ -139,6 +139,15 @@ analysis_pages = [
 ]
 analysis_page = st.sidebar.radio("", analysis_pages, label_visibility="collapsed")
 
+# Metrics section (new)
+st.sidebar.markdown("### 📊 Métricas")
+metrics_pages = [
+    "📊 Dashboard de Métricas",
+    "📋 Relatório de Validação",
+    "🎯 Análise de Mercados",
+]
+metrics_page = st.sidebar.radio("", metrics_pages, label_visibility="collapsed")
+
 # System section
 st.sidebar.markdown("### ⚙️ Sistema")
 system_pages = [
@@ -155,6 +164,8 @@ elif betting_page and betting_page != betting_pages[0]:
     page = betting_page
 elif analysis_page and analysis_page != analysis_pages[0]:
     page = analysis_page
+elif metrics_page and metrics_page != metrics_pages[0]:
+    page = metrics_page
 elif system_page and system_page != system_pages[0]:
     page = system_page
 else:
@@ -199,6 +210,15 @@ elif page == "📊 Calibração":
 elif page == "🏆 Rankings":
     from dashboard.pages import rankings
     rankings.show()
+elif page == "📊 Dashboard de Métricas":
+    from dashboard.pages import metrics_dashboard
+    metrics_dashboard.show()
+elif page == "📋 Relatório de Validação":
+    from dashboard.pages import validation_report
+    validation_report.show()
+elif page == "🎯 Análise de Mercados":
+    from dashboard.pages import market_analysis
+    market_analysis.show()
 elif page == "📱 Status das APIs":
     from dashboard.pages import api_status
     api_status.show()
