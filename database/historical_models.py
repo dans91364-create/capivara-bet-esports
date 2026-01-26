@@ -2,7 +2,14 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Text, JSON, Date, Time
 from sqlalchemy.orm import relationship
-from database.models import Base
+
+# Import Base from the main models to avoid circular imports
+try:
+    from database.models import Base
+except ImportError:
+    # Fallback if models not available
+    from sqlalchemy.orm import declarative_base
+    Base = declarative_base()
 
 
 # ============================================================================
@@ -15,7 +22,7 @@ class NBAGame(Base):
     
     id = Column(Integer, primary_key=True)
     game_id = Column(String(100), unique=True, nullable=False)
-    season = Column(String(20))  # "2025-26"
+    season = Column(String(20))  # "2024-25"
     season_type = Column(String(20))  # "regular", "playoffs", "playin"
     game_date = Column(Date)
     

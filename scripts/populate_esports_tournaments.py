@@ -15,11 +15,28 @@ from database.db import get_db_session, init_db
 from database.historical_models import (
     EsportsMatch, EsportsMapStats, EsportsPlayerStats, EsportsTeamStats
 )
-from scrapers.vlr.vlr_unified import VLRUnified
-from scrapers.hltv.hltv_unified import HLTVUnified
-from scrapers.lol.lol_unified import LoLUnified
-from scrapers.dota.dota_unified import DotaUnified
 from utils.logger import log
+
+# Try to import scrapers - they may not all be available
+try:
+    from scrapers.vlr.vlr_unified import VLRUnified
+except ImportError:
+    VLRUnified = None
+    
+try:
+    from scrapers.hltv.hltv_unified import HLTVUnified
+except ImportError:
+    HLTVUnified = None
+    
+try:
+    from scrapers.lol.lol_unified import LoLUnified
+except ImportError:
+    LoLUnified = None
+    
+try:
+    from scrapers.dota.dota_unified import DotaUnified
+except ImportError:
+    DotaUnified = None
 
 
 class EsportsTournamentPopulator:
@@ -65,6 +82,10 @@ class EsportsTournamentPopulator:
         log.info("Processing Valorant")
         log.info("="*60)
         
+        if not VLRUnified:
+            log.warning("VLRUnified scraper not available, skipping Valorant")
+            return
+        
         try:
             vlr = VLRUnified()
             matches_added = 0
@@ -98,6 +119,10 @@ class EsportsTournamentPopulator:
         log.info("Processing CS2")
         log.info("="*60)
         
+        if not HLTVUnified:
+            log.warning("HLTVUnified scraper not available, skipping CS2")
+            return
+        
         try:
             hltv = HLTVUnified()
             matches_added = 0
@@ -130,6 +155,10 @@ class EsportsTournamentPopulator:
         log.info("Processing League of Legends")
         log.info("="*60)
         
+        if not LoLUnified:
+            log.warning("LoLUnified scraper not available, skipping LoL")
+            return
+        
         try:
             lol = LoLUnified()
             matches_added = 0
@@ -161,6 +190,10 @@ class EsportsTournamentPopulator:
         log.info("\n" + "="*60)
         log.info("Processing Dota 2")
         log.info("="*60)
+        
+        if not DotaUnified:
+            log.warning("DotaUnified scraper not available, skipping Dota 2")
+            return
         
         try:
             dota = DotaUnified()

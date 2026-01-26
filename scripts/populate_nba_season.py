@@ -181,10 +181,34 @@ class NBASeasonPopulator:
             
         Returns:
             List of player stat dicts
+            
+        Note:
+            This is a framework implementation. Full implementation would require:
+            1. ESPN box score API integration
+            2. Parsing player statistics from box score
+            3. Calculating fantasy combos (PRA, stocks, etc.)
+            4. Team context (opponent defensive rating, etc.)
+            
+            For production use, integrate with ESPN API's box score endpoint.
         """
-        # This would need to be implemented with proper ESPN API calls
-        # For now, returning empty list as placeholder
-        # Real implementation would call ESPN box score API
+        # Framework implementation - returns empty list
+        # Real implementation would call ESPN box score API and parse player stats
+        # Example structure for future implementation:
+        # 
+        # box_score = await self.collector.get_box_score(game_id)
+        # player_stats = []
+        # for player in box_score['players']:
+        #     stat = {
+        #         'game_id': game_id,
+        #         'player_id': player['id'],
+        #         'player_name': player['name'],
+        #         'points': player['stats']['points'],
+        #         # ... other stats
+        #         'pts_reb_ast': player['stats']['points'] + rebounds + assists,
+        #     }
+        #     player_stats.append(stat)
+        # return player_stats
+        
         return []
     
     async def _calculate_team_stats(self):
@@ -255,14 +279,46 @@ class NBASeasonPopulator:
         log.info(f"Team stats calculated for {len(teams)} teams")
     
     async def _calculate_player_props(self):
-        """Calculate player props analysis from player game stats."""
+        """Calculate player props analysis from player game stats.
+        
+        Note:
+            This is a framework implementation. Full implementation would:
+            1. Query all player game stats grouped by player
+            2. Calculate all splits (home/away, rest days, opponent quality, etc.)
+            3. Calculate over/under rates for various lines
+            4. Analyze trends and streaks
+            5. Calculate with/without key teammate stats
+            
+            For production use, implement comprehensive statistical analysis:
+            - Group stats by player_id
+            - Calculate season averages
+            - Split by context (home/away, back-to-back, etc.)
+            - Calculate over rates for typical prop lines
+            - Identify trends and patterns
+        """
         log.info("Calculating player props analysis...")
         
-        # This would analyze all player game stats and create props analysis
-        # For now, just logging as placeholder
-        # Real implementation would aggregate stats by player and calculate all splits
+        # Framework implementation - would need full statistical analysis
+        # Real implementation would:
+        # 1. Get all player stats: stats = self.db.query(NBAPlayerGameStats).all()
+        # 2. Group by player: grouped = {}
+        # 3. For each player, calculate all splits
+        # 4. Save to NBAPlayerPropsAnalysis table
+        #
+        # Example structure:
+        # for player_id, player_stats in grouped.items():
+        #     props_analysis = NBAPlayerPropsAnalysis(
+        #         player_id=player_id,
+        #         prop_type='points',
+        #         line=25.5,
+        #         season_avg=calculate_avg(player_stats),
+        #         home_avg=calculate_avg([s for s in player_stats if s.is_home]),
+        #         # ... all other splits
+        #     )
+        #     self.db.add(props_analysis)
         
-        log.info("Player props analysis complete")
+        log.info("Player props analysis framework ready (requires full implementation)")
+
 
 
 async def main():
