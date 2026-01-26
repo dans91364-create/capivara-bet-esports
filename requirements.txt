@@ -46,6 +46,10 @@ playwright==1.40.0
 httpx==0.25.2
 aiohttp==3.13.3
 
+# WebSocket & Real-time (for future live scorebot features)
+websockets==10.4
+python-socketio==5.11.0
+
 # Logging
 loguru==0.7.2
 
