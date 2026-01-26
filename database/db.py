@@ -6,6 +6,12 @@ from config.settings import DATABASE_URL
 from database.models import Base
 from utils.logger import log
 
+# Import historical models to ensure they're registered
+try:
+    from database import historical_models
+except ImportError:
+    pass  # Historical models are optional
+
 
 # Create engine
 engine = create_engine(

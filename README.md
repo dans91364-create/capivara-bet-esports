@@ -8,9 +8,10 @@ Sistema de apostas esportivas com:
 - **Dashboard 2.0 interativo** (Streamlit) - 14 páginas com análise em tempo real
 - **Live Matches** - Odds em tempo real da Superbet API
 - **Integração Superbet** - eSports (CS2, Dota 2, Valorant, LoL) + Esportes Tradicionais (Tênis, Futebol)
+- **🆕 Banco de Dados Histórico COMPLETO** - Temporadas inteiras e torneios completos para análise profissional ([ver documentação](HISTORICAL_DATABASE.md))
 - **Paper trading** com gestão avançada de bankroll
 - **Múltiplos jogos**: CS2, LoL, Dota 2, Valorant, Tênis, Futebol
-- **Análise avançada**: Confidence, timing, casas, modelos preditivos, rankings
+- **Análise avançada**: Confidence, timing, casas, modelos preditivos, rankings, player props, BTTS
 - **Dark Mode** e UI/UX melhorada
 
 ## 🎯 Objetivo
@@ -20,9 +21,44 @@ Encontrar edge em apostas de esports e esportes tradicionais através de:
 - **Análise de múltiplas casas** de apostas (11 casas suportadas)
 - **Odds em tempo real** via Superbet API
 - **Comparador de odds** e identificação de value bets
+- **🆕 Banco de dados histórico** - Temporadas completas para análise profunda de padrões
+- **🆕 Player Props Analysis** - Análise completa de props com todos os splits (NBA)
+- **🆕 BTTS Analysis** - Análise de Both Teams To Score (Soccer)
+- **🆕 Map Analysis** - Performance por mapa (CS2, Valorant)
 - **Tracking de CLV** (Closing Line Value) usando Pinnacle como referência
 - **Dashboard interativo** com 14 páginas de análise
 - **Validação rigorosa** com calibração de modelos
+
+## 🆕 Banco de Dados Histórico Completo
+
+Sistema profissional de análise com **TEMPORADAS COMPLETAS** e **TORNEIOS INTEIROS**:
+
+- **📊 NBA**: Games, player stats, team stats, props analysis com todos os splits
+- **⚽ Soccer**: 8+ ligas, team stats, BTTS analysis, Over/Under tracking
+- **🎮 Esports**: CS2, Valorant, LoL, Dota 2 - Map stats, player props, team rankings
+- **🎾 Tennis**: ATP/WTA matches, player stats por superfície
+
+### 📈 Analytics Disponíveis
+
+```python
+from analytics.betting_analytics import get_analytics
+
+analytics = get_analytics()
+
+# NBA Player Props - Análise completa com todos os splits
+props = analytics.get_player_prop_analysis("LeBron James", "points", 25.5)
+# Retorna: overall, home/away, last 5/10, vs top/bottom defense, após vitória/derrota, etc.
+
+# Soccer BTTS Analysis
+btts = analytics.get_team_btts_analysis("Liverpool", "eng.1")
+# Retorna: overall, home, away, trend
+
+# Esports Map Stats
+maps = analytics.get_team_map_stats("Sentinels", "valorant")
+# Retorna: win rate por mapa, picks, bans
+```
+
+**[📖 Ver documentação completa do Historical Database](HISTORICAL_DATABASE.md)**
 
 ## ✨ Novidades Dashboard 2.0
 
@@ -268,7 +304,8 @@ capivara-bet-esports/
 │   └── telegram.py            # Config Telegram
 │
 ├── database/                  # Banco de dados
-│   ├── models.py              # SQLAlchemy models
+│   ├── models.py              # SQLAlchemy models (sistema principal)
+│   ├── historical_models.py   # 🆕 Modelos históricos (NBA, Soccer, Esports, Tennis)
 │   └── db.py                  # Conexão e sessão
 │
 ├── bookmakers/                # Casas de apostas - MODULAR
@@ -373,6 +410,18 @@ capivara-bet-esports/
 │   ├── strategies.py          # By strategy
 │   ├── streaks.py             # Streak tracking
 │   └── timing.py              # Timing analysis
+│
+├── analytics/                 # 🆕 Historical data analytics
+│   ├── __init__.py
+│   └── betting_analytics.py   # Player props, BTTS, map analysis
+│
+├── scripts/                   # 🆕 Data population scripts
+│   ├── populate_nba_season.py      # NBA season data
+│   ├── populate_soccer_leagues.py  # Soccer leagues data
+│   ├── populate_esports_tournaments.py  # Esports tournaments
+│   ├── populate_tennis_season.py   # Tennis ATP/WTA
+│   ├── calculate_patterns.py      # Pattern identification
+│   └── test_historical_db.py      # Database tests
 │
 ├── dashboard/                 # Streamlit dashboard
 │   ├── app.py                 # Main app (v2.0 com dark mode)
