@@ -40,6 +40,7 @@ class BetManager:
         """
         self.bets_file = bets_file or DATA_DIR / "bets.json"
         self.bets: List[Dict[str, Any]] = []
+        self._bet_counter = 0  # Monotonic counter for unique IDs
         self.load_bets()
     
     def load_bets(self):
@@ -48,6 +49,14 @@ class BetManager:
             try:
                 with open(self.bets_file, 'r', encoding='utf-8') as f:
                     self.bets = json.load(f)
+                # Set counter to highest existing ID + 1
+                if self.bets:
+                    max_counter = max(
+                        int(bet['bet_id'].split('_')[1]) 
+                        for bet in self.bets 
+                        if 'bet_id' in bet and '_' in bet['bet_id']
+                    )
+                    self._bet_counter = max_counter + 1
                 log.info(f"Loaded {len(self.bets)} bets from storage")
             except Exception as e:
                 log.error(f"Failed to load bets: {e}")
@@ -94,7 +103,8 @@ class BetManager:
         Returns:
             Bet ID
         """
-        bet_id = f"bet_{len(self.bets) + 1}_{int(datetime.now().timestamp())}"
+        bet_id = f"bet_{self._bet_counter}_{int(datetime.now().timestamp())}"
+        self._bet_counter += 1
         
         bet = {
             "bet_id": bet_id,

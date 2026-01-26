@@ -173,8 +173,10 @@ class ESPNSoccerCollector:
             name = stat_group.get("name", "").lower().replace(" ", "_")
             value = stat_group.get("displayValue", "0")
             try:
-                stats[name] = float(value) if "." in value else int(value)
-            except ValueError:
+                # Try to parse as float first (handles decimals)
+                stats[name] = float(value)
+            except (ValueError, TypeError):
+                # If not a number, keep as string
                 stats[name] = value
         return stats
     

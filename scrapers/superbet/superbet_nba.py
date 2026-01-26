@@ -180,6 +180,13 @@ class SuperbetNBA:
                         pass
                 elif 'under' in outcome_lower or 'abaixo' in outcome_lower:
                     under_odds = odds.odds
+                    # Extract line from outcome name
+                    try:
+                        numbers = [float(s) for s in odds.outcome_name.split() if s.replace('.', '').replace('-', '').isdigit()]
+                        if numbers and not line_value:
+                            line_value = numbers[0]
+                    except (ValueError, AttributeError):
+                        pass
             
             return {
                 'event_id': match.event_id,
