@@ -23,11 +23,24 @@ scrapers/
 │   ├── pinnacle.py          # ⏸️ DESABILITADO
 │   └── kto.py               # ⏸️ DESABILITADO
 │
-└── crypto/                  # Casas cripto (desabilitadas)
-    ├── bcgame.py            # ⏸️ DESABILITADO
-    ├── cloudbet.py          # ⏸️ DESABILITADO
-    ├── spartans.py          # ⏸️ DESABILITADO
-    └── thunderpick.py       # ⏸️ DESABILITADO
+├── crypto/                  # Casas cripto (desabilitadas)
+│   ├── bcgame.py            # ⏸️ DESABILITADO
+│   ├── cloudbet.py          # ⏸️ DESABILITADO
+│   ├── spartans.py          # ⏸️ DESABILITADO
+│   └── thunderpick.py       # ⏸️ DESABILITADO
+│
+├── hltv/                    # CS2/CS:GO data sources
+│   └── ...                  # HLTV.org integration
+│
+├── vlr/                     # Valorant data sources  
+│   └── ...                  # VLR.gg integration
+│
+└── lol/                     # ✅ League of Legends data sources (NEW)
+    ├── base.py              # Dataclasses for LoL
+    ├── lolesports_client.py # LoL Esports API client
+    ├── oracle_elixir.py     # Oracle's Elixir CSV parser
+    ├── lol_unified.py       # Unified API
+    └── README.md            # Complete documentation
 ```
 
 ## Status das Casas
@@ -155,3 +168,41 @@ As dependências necessárias já estão em `requirements.txt`:
 - `beautifulsoup4` - Parser HTML para scrapers
 - `selenium` - Automação de navegador (quando necessário)
 - `requests` - Cliente HTTP simples
+- `pandas` - Processamento de dados (para Oracle's Elixir)
+
+## Game Data Sources
+
+Além dos scrapers de bookmakers, o módulo `scrapers/` também inclui integrações com fontes de dados de jogos:
+
+### League of Legends (`scrapers/lol/`)
+
+Integração completa com dados de LoL Esports através de múltiplas fontes:
+
+- **LoL Esports API**: Match schedules, live results, tournament data
+- **Oracle's Elixir**: Historical statistics, player/team performance
+
+**Quick Start:**
+```python
+from scrapers.lol import LoLUnified
+
+lol = LoLUnified()
+matches = await lol.get_upcoming_matches("lck")
+player_stats = await lol.get_player_stats("Faker")
+```
+
+**Documentação completa**: [`scrapers/lol/README.md`](lol/README.md)
+
+### Valorant (`scrapers/vlr/`)
+
+Integração com VLR.gg para dados de Valorant esports.
+
+### CS2/CS:GO (`scrapers/hltv/`)
+
+Integração com HLTV.org para dados de Counter-Strike.
+
+---
+
+**Para exemplos de uso das integrações de jogos, veja:**
+- `example_lol_usage.py` - League of Legends
+- `example_vlr_usage.py` - Valorant  
+- `example_hltv_usage.py` - CS2/CS:GO
