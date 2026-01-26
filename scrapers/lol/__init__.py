@@ -15,13 +15,11 @@ Example:
 from scrapers.lol.base import (
     LoLTeam,
     LoLPlayer,
-    LoLMatch,
     LoLMatchResult,
     LoLGameResult,
-    LoLLeague,
     LoLTournament,
 )
-from scrapers.lol.lolesports_client import LoLEsportsClient
+from scrapers.lol.lolesports_client import LoLEsportsClient, LoLMatch, LoLLeague
 from scrapers.lol.oracle_elixir import OracleElixirParser
 from scrapers.lol.lol_unified import LoLUnified
 
