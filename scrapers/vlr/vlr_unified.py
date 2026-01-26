@@ -36,9 +36,13 @@ class VLRUnified:
         "col": "collegiate"
     }
     
-    def __init__(self):
-        """Initialize the unified API."""
-        self.api = VLRAPIClient()
+    def __init__(self, timeout: int = 10):
+        """Initialize the unified API.
+        
+        Args:
+            timeout: API request timeout in seconds (default: 10)
+        """
+        self.api = VLRAPIClient(timeout=timeout)
         self.scraper = VLRScraper()
     
     async def get_upcoming_matches(self) -> List[ValorantMatch]:

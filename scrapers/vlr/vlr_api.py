@@ -20,17 +20,24 @@ class VLRAPIClient:
     """
     
     BASE_URL = "https://vlrggapi.vercel.app"
+    DEFAULT_TIMEOUT = 10  # Default timeout in seconds
     
-    def __init__(self):
-        """Initialize the API client."""
+    def __init__(self, timeout: int = DEFAULT_TIMEOUT):
+        """Initialize the API client.
+        
+        Args:
+            timeout: Request timeout in seconds (default: 10)
+        """
         self.session = None
+        self.timeout = timeout
     
-    async def _get(self, endpoint: str, params: dict = None) -> dict:
+    async def _get(self, endpoint: str, params: dict = None, timeout: int = None) -> dict:
         """Make a GET request to the API.
         
         Args:
             endpoint: API endpoint path
             params: Query parameters
+            timeout: Request timeout in seconds (overrides default)
             
         Returns:
             JSON response data
@@ -44,8 +51,10 @@ class VLRAPIClient:
         url = f"{self.BASE_URL}{endpoint}"
         log.debug(f"VLR API request: {url} with params {params}")
         
+        request_timeout = timeout if timeout is not None else self.timeout
+        
         try:
-            async with self.session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            async with self.session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=request_timeout)) as response:
                 response.raise_for_status()
                 data = await response.json()
                 log.debug(f"VLR API response: {len(str(data))} bytes")

@@ -93,10 +93,14 @@ class Valorant(GameBase):
             "first_blood",
         ]
     
-    def __del__(self):
-        """Cleanup on deletion."""
+    def close(self):
+        """Close VLR API resources.
+        
+        Call this method when done using the Valorant game instance to clean up resources.
+        """
         try:
             asyncio.run(self._vlr.close())
-        except:
+        except Exception:
             pass
+
 

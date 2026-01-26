@@ -93,8 +93,9 @@ class VLRScraper:
                     if match_page and not match_page.startswith('http'):
                         match_page = f"{self.base_url}{match_page}"
                     
-                    # Unix timestamp - use current time as placeholder
-                    unix_timestamp = str(int(datetime.utcnow().timestamp()))
+                    # Unix timestamp - placeholder (actual timestamp extraction would require
+                    # more complex parsing of the time element)
+                    unix_timestamp = ""
                     
                     match = ValorantMatch(
                         team1=team1_name,

@@ -65,7 +65,7 @@ class VLRScraper(ScraperBase):
             elif 'day' in time_str.lower():
                 days = int(''.join(filter(str.isdigit, time_str.split('day')[0])))
                 return datetime.utcnow() + timedelta(days=days)
-        except:
+        except Exception:
             pass
         
         # Default to 2 hours from now
@@ -153,10 +153,14 @@ class VLRScraper(ScraperBase):
         # This would require parsing individual match pages
         return None
     
-    def __del__(self):
-        """Cleanup on deletion."""
+    def close(self):
+        """Close the VLR unified API resources.
+        
+        Call this method when done using the scraper to clean up resources.
+        """
         try:
             asyncio.run(self._vlr.close())
-        except:
+        except Exception:
             pass
+
 
