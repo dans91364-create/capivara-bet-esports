@@ -116,7 +116,7 @@ async def get_live_games(
     query = db.query(Match).filter(
         and_(
             Match.start_time <= current_time,
-            Match.finished == False
+            Match.finished.is_(False)
         )
     )
     
