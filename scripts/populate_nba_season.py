@@ -63,6 +63,88 @@ class NBASeasonPopulator:
             return float(value)
         except (ValueError, TypeError):
             return default
+    
+    @staticmethod
+    def _parse_shot_attempts(value):
+        """Parse shot attempts string like '8-16' into (made, attempted).
+        
+        Args:
+            value: String in format 'made-attempted' (e.g., '8-16')
+            
+        Returns:
+            Tuple of (made, attempted) as integers
+        """
+        try:
+            parts = str(value).split('-')
+            made = int(parts[0]) if len(parts) > 0 else 0
+            attempted = int(parts[1]) if len(parts) > 1 else 0
+            return made, attempted
+        except (ValueError, TypeError):
+            return 0, 0
+    
+    def _extract_player_stat_dict(self, player, stats_row, game_id, team, is_home, opponent):
+        """Extract player stats from gamelog row into dict.
+        
+        Args:
+            player: Player info dict
+            stats_row: DataFrame row with stats
+            game_id: Game ID
+            team: Player's team
+            is_home: Whether player is on home team
+            opponent: Opponent team
+            
+        Returns:
+            Dict with player stats
+        """
+        # Parse field goals, 3-pointers, and free throws
+        fg_made, fg_attempted = self._parse_shot_attempts(stats_row.get('field_goals', '0-0'))
+        three_made, three_attempted = self._parse_shot_attempts(stats_row.get('three_pointers', '0-0'))
+        ft_made, ft_attempted = self._parse_shot_attempts(stats_row.get('free_throws', '0-0'))
+        
+        # Extract numeric stats
+        points = self._safe_int(stats_row.get('points', 0))
+        rebounds = self._safe_int(stats_row.get('rebounds', 0))
+        assists = self._safe_int(stats_row.get('assists', 0))
+        blocks = self._safe_int(stats_row.get('blocks', 0))
+        steals = self._safe_int(stats_row.get('steals', 0))
+        turnovers = self._safe_int(stats_row.get('turnovers', 0))
+        fouls = self._safe_int(stats_row.get('personal_fouls', 0))
+        
+        # Parse minutes
+        minutes_str = str(stats_row.get('minutes', '0'))
+        minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
+        
+        return {
+            'game_id': game_id,
+            'player_id': player.get('player_id'),
+            'player_name': player.get('name', ''),
+            'team': team,
+            'is_home': is_home,
+            'minutes': minutes,
+            'points': points,
+            'field_goals_made': fg_made,
+            'field_goals_attempted': fg_attempted,
+            'fg_percentage': self._safe_float(stats_row.get('fg_percentage', 0)),
+            'three_pointers_made': three_made,
+            'three_pointers_attempted': three_attempted,
+            'three_percentage': self._safe_float(stats_row.get('three_percentage', 0)),
+            'free_throws_made': ft_made,
+            'free_throws_attempted': ft_attempted,
+            'ft_percentage': self._safe_float(stats_row.get('ft_percentage', 0)),
+            'rebounds_total': rebounds,
+            'assists': assists,
+            'steals': steals,
+            'blocks': blocks,
+            'turnovers': turnovers,
+            'personal_fouls': fouls,
+            # Fantasy/Props combos
+            'pts_reb_ast': points + rebounds + assists,  # PRA combo
+            'pts_reb': points + rebounds,
+            'pts_ast': points + assists,
+            'reb_ast': rebounds + assists,
+            'stocks': steals + blocks,  # Stocks
+            'opponent': opponent,
+        }
         
     async def populate_season(self, days_back: int = 120):
         """Populate entire season data.
@@ -280,67 +362,9 @@ class NBASeasonPopulator:
                 
                 if not game_stats.empty:
                     stats_row = game_stats.iloc[0]
-                    
-                    # Parse field goals (e.g., "8-16" -> made=8, attempted=16)
-                    fg = str(stats_row.get('field_goals', '0-0')).split('-')
-                    fg_made = self._safe_int(fg[0] if len(fg) > 0 else 0)
-                    fg_attempted = self._safe_int(fg[1] if len(fg) > 1 else 0)
-                    
-                    # Parse 3-pointers
-                    three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
-                    three_made = self._safe_int(three_pt[0] if len(three_pt) > 0 else 0)
-                    three_attempted = self._safe_int(three_pt[1] if len(three_pt) > 1 else 0)
-                    
-                    # Parse free throws
-                    ft = str(stats_row.get('free_throws', '0-0')).split('-')
-                    ft_made = self._safe_int(ft[0] if len(ft) > 0 else 0)
-                    ft_attempted = self._safe_int(ft[1] if len(ft) > 1 else 0)
-                    
-                    # Extract numeric stats
-                    points = self._safe_int(stats_row.get('points', 0))
-                    rebounds = self._safe_int(stats_row.get('rebounds', 0))
-                    assists = self._safe_int(stats_row.get('assists', 0))
-                    blocks = self._safe_int(stats_row.get('blocks', 0))
-                    steals = self._safe_int(stats_row.get('steals', 0))
-                    turnovers = self._safe_int(stats_row.get('turnovers', 0))
-                    fouls = self._safe_int(stats_row.get('personal_fouls', 0))
-                    
-                    # Parse minutes (e.g., "37" -> 37)
-                    minutes_str = str(stats_row.get('minutes', '0'))
-                    minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
-                    
-                    stat_dict = {
-                        'game_id': game_id,
-                        'player_id': player_id,
-                        'player_name': player.get('name', ''),
-                        'team': home_team,
-                        'is_home': True,
-                        'minutes': minutes,
-                        'points': points,
-                        'field_goals_made': fg_made,
-                        'field_goals_attempted': fg_attempted,
-                        'fg_percentage': self._safe_float(stats_row.get('fg_percentage', 0)),
-                        'three_pointers_made': three_made,
-                        'three_pointers_attempted': three_attempted,
-                        'three_percentage': self._safe_float(stats_row.get('three_percentage', 0)),
-                        'free_throws_made': ft_made,
-                        'free_throws_attempted': ft_attempted,
-                        'ft_percentage': self._safe_float(stats_row.get('ft_percentage', 0)),
-                        'rebounds_total': rebounds,
-                        'assists': assists,
-                        'steals': steals,
-                        'blocks': blocks,
-                        'turnovers': turnovers,
-                        'personal_fouls': fouls,
-                        # Fantasy/Props combos
-                        'pts_reb_ast': points + rebounds + assists,  # PRA combo
-                        'pts_reb': points + rebounds,
-                        'pts_ast': points + assists,
-                        'reb_ast': rebounds + assists,
-                        'stocks': steals + blocks,  # Stocks
-                        'opponent': away_team,
-                    }
-                    
+                    stat_dict = self._extract_player_stat_dict(
+                        player, stats_row, game_id, home_team, True, away_team
+                    )
                     player_stats.append(stat_dict)
             
             # Process away team players
@@ -357,67 +381,9 @@ class NBASeasonPopulator:
                 
                 if not game_stats.empty:
                     stats_row = game_stats.iloc[0]
-                    
-                    # Parse field goals
-                    fg = str(stats_row.get('field_goals', '0-0')).split('-')
-                    fg_made = self._safe_int(fg[0] if len(fg) > 0 else 0)
-                    fg_attempted = self._safe_int(fg[1] if len(fg) > 1 else 0)
-                    
-                    # Parse 3-pointers
-                    three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
-                    three_made = self._safe_int(three_pt[0] if len(three_pt) > 0 else 0)
-                    three_attempted = self._safe_int(three_pt[1] if len(three_pt) > 1 else 0)
-                    
-                    # Parse free throws
-                    ft = str(stats_row.get('free_throws', '0-0')).split('-')
-                    ft_made = self._safe_int(ft[0] if len(ft) > 0 else 0)
-                    ft_attempted = self._safe_int(ft[1] if len(ft) > 1 else 0)
-                    
-                    # Extract numeric stats
-                    points = self._safe_int(stats_row.get('points', 0))
-                    rebounds = self._safe_int(stats_row.get('rebounds', 0))
-                    assists = self._safe_int(stats_row.get('assists', 0))
-                    blocks = self._safe_int(stats_row.get('blocks', 0))
-                    steals = self._safe_int(stats_row.get('steals', 0))
-                    turnovers = self._safe_int(stats_row.get('turnovers', 0))
-                    fouls = self._safe_int(stats_row.get('personal_fouls', 0))
-                    
-                    # Parse minutes
-                    minutes_str = str(stats_row.get('minutes', '0'))
-                    minutes = self._safe_int(minutes_str.split(':')[0] if ':' in minutes_str else minutes_str)
-                    
-                    stat_dict = {
-                        'game_id': game_id,
-                        'player_id': player_id,
-                        'player_name': player.get('name', ''),
-                        'team': away_team,
-                        'is_home': False,
-                        'minutes': minutes,
-                        'points': points,
-                        'field_goals_made': fg_made,
-                        'field_goals_attempted': fg_attempted,
-                        'fg_percentage': self._safe_float(stats_row.get('fg_percentage', 0)),
-                        'three_pointers_made': three_made,
-                        'three_pointers_attempted': three_attempted,
-                        'three_percentage': self._safe_float(stats_row.get('three_percentage', 0)),
-                        'free_throws_made': ft_made,
-                        'free_throws_attempted': ft_attempted,
-                        'ft_percentage': self._safe_float(stats_row.get('ft_percentage', 0)),
-                        'rebounds_total': rebounds,
-                        'assists': assists,
-                        'steals': steals,
-                        'blocks': blocks,
-                        'turnovers': turnovers,
-                        'personal_fouls': fouls,
-                        # Fantasy/Props combos
-                        'pts_reb_ast': points + rebounds + assists,
-                        'pts_reb': points + rebounds,
-                        'pts_ast': points + assists,
-                        'reb_ast': rebounds + assists,
-                        'stocks': steals + blocks,
-                        'opponent': home_team,
-                    }
-                    
+                    stat_dict = self._extract_player_stat_dict(
+                        player, stats_row, game_id, away_team, False, home_team
+                    )
                     player_stats.append(stat_dict)
             
         except Exception as e:
