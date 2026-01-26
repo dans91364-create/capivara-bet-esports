@@ -38,13 +38,15 @@ class LoLEsportsClient:
     """Client for the official LoL Esports API."""
     
     BASE_URL = "https://esports-api.lolesports.com/persisted/gw"
+    # Public API key from official LoL Esports API documentation
+    # This is a well-known public key used by all LoL Esports API consumers
     API_KEY = "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"
     
     def __init__(self):
         self.session = None
         self.headers = {
             "x-api-key": self.API_KEY,
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
     
     async def _get(self, endpoint: str, params: dict = None) -> dict:
