@@ -50,3 +50,26 @@ DAILY_REPORT_HOUR = int(os.getenv("DAILY_REPORT_HOUR", "23"))
 # Debug
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# Superbet API
+SUPERBET_BASE_URL = os.getenv(
+    "SUPERBET_BASE_URL",
+    "https://production-superbet-offer-br.freetls.fastly.net/v2/pt-BR"
+)
+SUPERBET_SPORT_IDS = {
+    'cs2': 55,          # Counter-Strike 2
+    'dota2': 54,        # Dota 2
+    'valorant': 153,    # Valorant
+    'lol': 39,          # League of Legends
+    'tennis': 4,        # Tênis
+    'football': 5,      # Futebol
+}
+
+# Cache Settings
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))  # 1 hour default
+TOURNAMENT_CACHE_TTL = int(os.getenv("TOURNAMENT_CACHE_TTL", "3600"))  # 1 hour
+
+# Dashboard Settings
+DASHBOARD_AUTO_REFRESH = os.getenv("DASHBOARD_AUTO_REFRESH", "False").lower() == "true"
+DASHBOARD_REFRESH_INTERVAL = int(os.getenv("DASHBOARD_REFRESH_INTERVAL", "30"))  # seconds
+DARK_MODE_DEFAULT = os.getenv("DARK_MODE_DEFAULT", "False").lower() == "true"

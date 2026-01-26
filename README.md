@@ -1,24 +1,81 @@
-# 🎮 Capivara Bet Esports - v1.0 Test Version
+# 🎮 Capivara Bet Esports - v2.0 Dashboard Update
 
-Sistema completo de apostas em esports com análise avançada, paper trading e dashboard interativo.
+Sistema completo de apostas em esports com análise avançada, paper trading, dashboard interativo e integração Superbet API.
 
 ## 📋 Visão Geral
 
 Sistema de apostas esportivas com:
-- **Dashboard interativo** (Streamlit) como centro de controle
-- **Paper trading** com stake fictício de R$100 por aposta
-- **Múltiplos jogos**: CS2, LoL, Dota 2, Valorant
-- **Múltiplas casas**: Tradicionais + Crypto (modular)
-- **Análise avançada**: Confidence, timing, casas, modelos preditivos
+- **Dashboard 2.0 interativo** (Streamlit) - 14 páginas com análise em tempo real
+- **Live Matches** - Odds em tempo real da Superbet API
+- **Integração Superbet** - eSports (CS2, Dota 2, Valorant, LoL) + Esportes Tradicionais (Tênis, Futebol)
+- **Paper trading** com gestão avançada de bankroll
+- **Múltiplos jogos**: CS2, LoL, Dota 2, Valorant, Tênis, Futebol
+- **Análise avançada**: Confidence, timing, casas, modelos preditivos, rankings
+- **Dark Mode** e UI/UX melhorada
 
 ## 🎯 Objetivo
 
-Encontrar edge em apostas de esports através de:
+Encontrar edge em apostas de esports e esportes tradicionais através de:
 - **Múltiplos modelos preditivos** (ELO, Glicko, XGBoost, Ensemble)
 - **Análise de múltiplas casas** de apostas (11 casas suportadas)
+- **Odds em tempo real** via Superbet API
+- **Comparador de odds** e identificação de value bets
 - **Tracking de CLV** (Closing Line Value) usando Pinnacle como referência
-- **Dashboard interativo** com 8 páginas de análise
+- **Dashboard interativo** com 14 páginas de análise
 - **Validação rigorosa** com calibração de modelos
+
+## ✨ Novidades Dashboard 2.0
+
+### 🆕 Novas Páginas
+1. **🎮 Live Matches** - Partidas ao vivo com odds em tempo real (auto-refresh 30s)
+2. **📅 Calendário** - Visualização mensal de torneios e eventos
+3. **🔄 Comparador de Odds** - Compare odds e identifique value bets
+4. **📱 Status das APIs** - Health check e monitoramento de todas integrações
+5. **🏆 Rankings** - Rankings ELO/Glicko-2 por jogo e região
+6. **💰 Bankroll Management** - Gestão avançada de banca com equity curve
+
+### 🎨 Melhorias de UI/UX
+- **Dark Mode** - Toggle de tema claro/escuro
+- **Sidebar Organizada** - Navegação por seções (Principal, Apostas, Análises, Sistema)
+- **Sparklines** - Mini-gráficos nos KPIs da home
+- **Quick Stats** - Métricas rápidas no sidebar
+- **CSS Aprimorado** - Gradientes, cards melhorados, animações
+
+### 🔌 Nova Integração: Superbet API
+
+#### Sport IDs Suportados
+```python
+SUPERBET_SPORT_IDS = {
+    'cs2': 55,          # Counter-Strike 2
+    'dota2': 54,        # Dota 2
+    'valorant': 153,    # Valorant
+    'lol': 39,          # League of Legends
+    'tennis': 4,        # Tênis
+    'football': 5,      # Futebol
+}
+```
+
+#### Endpoints Disponíveis
+- `/sports` - Lista de esportes
+- `/tournaments` - Lista de torneios
+- `/events/by-date` - Eventos por data
+- `/events/{id}` - Detalhes do evento
+- `/events/live` - Eventos ao vivo
+
+#### Uso Básico
+```python
+import asyncio
+from scrapers.superbet import SuperbetEsports
+
+async def fetch_cs2_matches():
+    async with SuperbetEsports() as esports:
+        matches = await esports.get_cs2_matches(days_ahead=7)
+        for match in matches:
+            print(f"{match.team1} vs {match.team2}")
+            print(f"Odds: {match.markets[0].odds_list[0].odds}")
+
+asyncio.run(fetch_cs2_matches())
+```
 
 ## 🏗️ Arquitetura
 
@@ -77,6 +134,9 @@ capivara-bet-esports/
 │   │   ├── lol.py             # League of Legends
 │   │   ├── dota2.py           # Dota 2
 │   │   └── valorant.py        # Valorant
+│   ├── sports/                # 🆕 Esportes Tradicionais
+│   │   ├── tennis.py          # Tênis (ATP, WTA)
+│   │   └── football.py        # Futebol
 │   └── mobile/                # Estrutura para mobile
 │       └── _template.py
 │
@@ -89,6 +149,14 @@ capivara-bet-esports/
 │   ├── vlr.py                 # Valorant data
 │   ├── oracle_elixir.py       # LoL data
 │   ├── opendota.py            # Dota 2 data
+│   ├── superbet/              # 🆕 Superbet API integration
+│   │   ├── base.py            # Dataclasses
+│   │   ├── superbet_client.py # Async REST client
+│   │   ├── superbet_esports.py # eSports fetcher
+│   │   ├── superbet_tennis.py  # Tennis fetcher
+│   │   ├── superbet_football.py # Football fetcher
+│   │   ├── tournament_cache.py  # Cache with TTL
+│   │   └── README.md          # API documentation
 │   ├── odds.py                # Odds aggregator
 │   └── results.py             # Results fetcher
 │
@@ -128,19 +196,31 @@ capivara-bet-esports/
 │   └── timing.py              # Timing analysis
 │
 ├── dashboard/                 # Streamlit dashboard
-│   ├── app.py                 # Main app
+│   ├── app.py                 # Main app (v2.0 com dark mode)
 │   ├── pages/                 # Dashboard pages
-│   │   ├── home.py
-│   │   ├── suggestions.py
-│   │   ├── confirmed.py
-│   │   ├── performance.py
-│   │   ├── confidence.py
-│   │   ├── bookmakers.py
-│   │   ├── calibration.py
-│   │   └── settings.py
+│   │   ├── home.py            # 🔄 Enhanced com sparklines
+│   │   ├── live.py            # 🆕 Live matches
+│   │   ├── calendar.py        # 🆕 Calendário de eventos
+│   │   ├── odds_compare.py    # 🆕 Comparador de odds
+│   │   ├── api_status.py      # 🆕 Status das APIs
+│   │   ├── rankings.py        # 🆕 Rankings de times
+│   │   ├── bankroll.py        # 🆕 Gestão de banca
+│   │   ├── suggestions.py     # Apostas sugeridas
+│   │   ├── confirmed.py       # Apostas confirmadas
+│   │   ├── performance.py     # Performance
+│   │   ├── confidence.py      # Por confidence
+│   │   ├── bookmakers.py      # Por casa
+│   │   ├── calibration.py     # Calibração
+│   │   └── settings.py        # Configurações
 │   └── components/            # Reusable components
-│       ├── charts.py
-│       ├── tables.py
+│       ├── charts.py          # Chart components
+│       ├── tables.py          # Table components
+│       ├── filters.py         # Filter components
+│       ├── live_match_card.py # 🆕 Live match cards
+│       ├── odds_table.py      # 🆕 Odds tables
+│       ├── sparkline.py       # 🆕 Sparkline charts
+│       ├── calendar_view.py   # 🆕 Calendar view
+│       └── api_health.py      # 🆕 API health status
 │       └── filters.py
 │
 ├── telegram/                  # Telegram integration
@@ -160,19 +240,30 @@ capivara-bet-esports/
 │   └── daily_report.py
 │
 └── utils/                     # Utilities
-    ├── helpers.py
-    ├── logger.py
-    └── decorators.py
+    ├── helpers.py             # Helper functions
+    ├── logger.py              # Logging utilities
+    ├── decorators.py          # Custom decorators
+    ├── cache.py               # 🆕 TTL cache implementation
+    └── api_health.py          # 🆕 API health check utilities
 ```
 
-## 🎮 Jogos Implementados
+## 🎮 Jogos e Esportes Implementados
 
-| Jogo | Fonte de Dados | Draft | Mapas | Status |
-|------|----------------|-------|-------|--------|
-| **CS2** | HLTV | ❌ | ✅ (7 mapas) | ✅ Implementado |
-| **LoL** | Oracle's Elixir | ✅ (Picks/Bans) | ❌ | ✅ Implementado |
-| **Dota 2** | OpenDota API | ✅ (Heroes) | ❌ | ✅ Implementado |
-| **Valorant** | VLR.gg | ✅ (Agentes) | ✅ (10 mapas) | ✅ Implementado |
+### eSports
+
+| Jogo | Fonte de Dados | Draft | Mapas | Superbet | Status |
+|------|----------------|-------|-------|----------|--------|
+| **CS2** | HLTV + Superbet | ❌ | ✅ (7 mapas) | ✅ Sport ID: 55 | ✅ Implementado |
+| **LoL** | Oracle's Elixir + Superbet | ✅ (Picks/Bans) | ❌ | ✅ Sport ID: 39 | ✅ Implementado |
+| **Dota 2** | OpenDota + Superbet | ✅ (Heroes) | ❌ | ✅ Sport ID: 54 | ✅ Implementado |
+| **Valorant** | VLR.gg + Superbet | ✅ (Agentes) | ✅ (10 mapas) | ✅ Sport ID: 153 | ✅ Implementado |
+
+### 🆕 Esportes Tradicionais
+
+| Esporte | Fonte de Dados | Superbet | Status |
+|---------|----------------|----------|--------|
+| **Tênis** | Superbet API | ✅ Sport ID: 4 | ✅ Implementado |
+| **Futebol** | Superbet API | ✅ Sport ID: 5 | ✅ Implementado |
 
 ## 🏦 Casas de Apostas
 
@@ -193,57 +284,108 @@ capivara-bet-esports/
 
 **Total: 11 casas suportadas**
 
-## 📊 Dashboard (Streamlit)
+## 📊 Dashboard 2.0 (Streamlit)
 
-### Páginas (8)
+### Páginas Principais (14 páginas)
 
-1. **🏠 Home**
-   - KPIs gerais (Total apostas, Win rate, ROI, Lucro)
-   - Streak atual
-   - Apostas pendentes
+#### 🏠 Seção Principal
+1. **🏠 Home** (Enhanced v2.0)
+   - KPIs com sparklines (últimos 7 dias)
+   - Performance últimas 24h
+   - Alertas do sistema
+   - Próximas partidas (hoje)
+   - Streak atual e estatísticas
    - Performance por jogo
 
-2. **💡 Apostas Sugeridas**
+2. **🎮 Live Matches** (NEW)
+   - Partidas ao vivo com odds em tempo real
+   - Auto-refresh a cada 30 segundos
+   - Filtros por jogo (CS2, Dota 2, Valorant, LoL)
+   - Visualização em cards ou compacta
+   - Próximas partidas nas próximas horas
+
+3. **📅 Calendário** (NEW)
+   - Visualização mensal de torneios
+   - Timeline de próximos 7 dias
+   - Lista de torneios por tier (S, A, B, C)
+   - Filtros por jogo
+   - Eventos programados
+
+#### 💰 Seção de Apostas
+4. **💡 Apostas Sugeridas**
    - Visualizar sugestões do sistema
    - Confirmar ou ignorar apostas
    - Detalhes completos de cada aposta
    - Confidence e edge visíveis
 
-3. **✅ Apostas Confirmadas**
+5. **✅ Apostas Confirmadas**
    - Histórico de apostas confirmadas
    - Filtros (status, jogo, casa)
    - Tabela detalhada com resultados
    - Resumo estatístico
 
-4. **📈 Performance**
+6. **🔄 Comparador de Odds** (NEW)
+   - Compare odds entre diferentes mercados
+   - Identificação automática de value bets
+   - Seção de arbitragem (surebets)
+   - Destaque das melhores odds
+   - Filtros por jogo e mercado
+
+7. **💰 Bankroll Management** (NEW)
+   - Overview da banca atual
+   - Equity curve (evolução da banca)
+   - Configurações de stake e Kelly
+   - Análise de drawdown
+   - Métricas de risco (Risk of Ruin, Max DD)
+   - Distribuição de stakes
+
+#### 📊 Seção de Análises
+8. **📈 Performance**
    - Métricas avançadas (Sharpe, Win/Loss Ratio, Max DD)
    - Performance por jogo (gráficos)
    - Performance por confidence range
    - Análise temporal
 
-5. **🎯 Análise por Confidence**
+9. **🎯 Por Confidence**
    - Performance em faixas de 5% (55%-100%)
    - Gráficos de Win Rate e ROI por faixa
    - Identificação da faixa mais lucrativa
    - Insights de calibração
 
-6. **🏦 Análise por Casa**
-   - Comparação entre bookmakers
-   - ROI e CLV por casa
-   - Melhor casa por jogo
-   - Odds de abertura vs fechamento
+10. **🏦 Por Casa**
+    - Comparação entre bookmakers
+    - ROI e CLV por casa
+    - Melhor casa por jogo
+    - Odds de abertura vs fechamento
 
-7. **📊 Calibração**
-   - Curva de calibração
-   - Brier Score e Log Loss
-   - CLV analysis
-   - Correlação CLV x Resultados
+11. **📊 Calibração**
+    - Curva de calibração
+    - Brier Score e Log Loss
+    - CLV analysis
+    - Correlação CLV x Resultados
 
-8. **⚙️ Configurações**
-   - Parâmetros de apostas
-   - Configuração Telegram
-   - Filtros de jogos
-   - Casas ativas
+12. **🏆 Rankings** (NEW)
+    - Rankings ELO/Glicko-2 por jogo
+    - Evolução de rating ao longo do tempo
+    - Rankings por região
+    - Top 10 times
+    - Histórico de forma recente
+
+#### ⚙️ Seção Sistema
+13. **📱 Status das APIs** (NEW)
+    - Health check de todas as APIs
+    - Latência média e uptime
+    - Logs de erros recentes
+    - Histórico de saúde
+    - Métricas agregadas (24h)
+    - Detalhes das integrações
+
+14. **⚙️ Configurações**
+    - Parâmetros de apostas
+    - Configuração Telegram
+    - Filtros de jogos
+    - Casas ativas
+    - 🆕 Dark mode preference
 
 ## 💰 Paper Trading
 
