@@ -5,6 +5,7 @@ from .superbet_client import SuperbetClient
 from .superbet_esports import SuperbetEsports
 from .superbet_tennis import SuperbetTennis
 from .superbet_football import SuperbetFootball
+from .superbet_nba import SuperbetNBA
 
 __all__ = [
     'SuperbetEvent',
@@ -15,4 +16,5 @@ __all__ = [
     'SuperbetEsports',
     'SuperbetTennis',
     'SuperbetFootball',
+    'SuperbetNBA',
 ]

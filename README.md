@@ -77,6 +77,168 @@ async def fetch_cs2_matches():
 asyncio.run(fetch_cs2_matches())
 ```
 
+### 🏀⚽🎾 Nova Integração: ESPN Collectors (Esportes Tradicionais)
+
+#### Esportes Suportados
+
+**🏀 NBA - Basketball**
+```python
+from scrapers.espn import ESPNNBACollector
+
+async def get_nba_player_stats():
+    nba = ESPNNBACollector()
+    
+    # Get player statistics
+    stats = await nba.get_player_stats("1966")  # LeBron James
+    
+    # Get today's scoreboard
+    games = await nba.get_scoreboard()
+    
+    # Get player game log
+    gamelog = await nba.get_player_gamelog_df("1966")
+    
+    await nba.close()
+```
+
+**⚽ Soccer - Futebol**
+```python
+from scrapers.espn import ESPNSoccerCollector
+
+async def get_soccer_matches():
+    soccer = ESPNSoccerCollector()
+    
+    # Get Premier League matches
+    matches = await soccer.get_matches_by_date("20260126", "eng.1")
+    
+    # Get match result
+    result = await soccer.get_match_result("game_id", "eng.1")
+    
+    # Check Both Teams To Score
+    btts = await soccer.check_btts("game_id", "eng.1")
+    
+    # Check Over/Under
+    is_over, total = await soccer.check_over_under("game_id", "eng.1", 2.5)
+    
+    await soccer.close()
+```
+
+**Ligas Suportadas:**
+- 🇧🇷 Brasileirão Série A e B, Copa do Brasil
+- 🌎 Copa Libertadores, Copa Sudamericana
+- 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League
+- 🇪🇸 La Liga
+- 🇮🇹 Serie A
+- 🇩🇪 Bundesliga
+- 🇫🇷 Ligue 1
+- 🏆 UEFA Champions League, Europa League
+
+**🎾 Tennis**
+```python
+from scrapers.espn import ESPNTennisCollector
+
+async def get_tennis_matches():
+    tennis = ESPNTennisCollector()
+    
+    # Get ATP matches
+    matches = await tennis.get_matches_by_date("20260126", "atp")
+    
+    # Get match result
+    result = await tennis.get_match_result("match_id", "atp")
+    
+    # Get set scores
+    sets = await tennis.get_set_scores("match_id", "atp")
+    
+    # Check total games over/under
+    is_over, total = await tennis.check_total_games("match_id", "atp", 21.5)
+    
+    await tennis.close()
+```
+
+**Tours Suportados:**
+- 🎾 ATP Tour (Men's)
+- 🎾 WTA Tour (Women's)
+- 🏆 Grand Slams: Australian Open, Roland Garros, Wimbledon, US Open
+
+#### 🔗 Integração ESPN + Superbet
+
+Superbet NBA com mapeamento ESPN para player props:
+
+```python
+from scrapers.superbet import SuperbetNBA
+from utils.player_registry import player_registry
+
+async def get_nba_player_props():
+    async with SuperbetNBA() as nba:
+        # Get player props with ESPN mapping
+        props = await nba.get_player_props(days_ahead=1)
+        
+        for prop in props:
+            print(f"{prop['player_name']} - {prop['stat_type']}")
+            print(f"Line: {prop['line']}")
+            print(f"ESPN ID: {prop['espn_player_id']}")
+            print(f"Over: {prop['over_odds']} | Under: {prop['under_odds']}")
+```
+
+#### 🎯 Utilities
+
+**Player Registry - Fuzzy Matching**
+```python
+from utils.player_registry import player_registry
+
+# Add players
+player_registry.add_player("LeBron James", "1966", "nba", team="LAL")
+
+# Fuzzy search
+player = player_registry.find_player_fuzzy("lebron", sport="nba")
+espn_id = player_registry.get_espn_id("LeBron James")
+```
+
+**Bet Manager - P&L Tracking**
+```python
+from betting.bet_manager import bet_manager
+
+# Add bet
+bet_id = bet_manager.add_bet(
+    event_id="game_123",
+    event_name="Lakers vs Celtics",
+    sport="nba",
+    bet_type="over_under",
+    selection="Over 218.5",
+    odds=1.90,
+    stake=100
+)
+
+# Settle bet
+bet_manager.settle_bet(bet_id, status="won")
+
+# Get statistics
+stats = bet_manager.get_statistics(sport="nba")
+print(f"Win Rate: {stats['win_rate']:.1f}%")
+print(f"ROI: {stats['roi']:.2f}%")
+```
+
+**Telegram Notifications**
+```python
+from notifications.telegram_notifier import telegram_notifier
+
+# Send value bet alert
+telegram_notifier.send_value_bet_alert({
+    "sport": "nba",
+    "event_name": "Lakers vs Celtics",
+    "bet_type": "Player Props",
+    "selection": "LeBron Over 25.5 Points",
+    "our_odds": 1.75,
+    "bookmaker_odds": 1.90,
+    "edge": 0.086,
+    "confidence": 0.72,
+    "bookmaker": "Superbet",
+    "stake": 100
+})
+
+# Send daily report
+telegram_notifier.send_daily_report(stats)
+```
+
 ## 🏗️ Arquitetura
 
 ### Filosofia: Plug & Play
@@ -145,14 +307,30 @@ capivara-bet-esports/
 │   └── registry.py
 │
 ├── scrapers/                  # Coletores de dados
-│   ├── hltv.py                # CS2 data
-│   ├── vlr.py                 # Valorant data
-│   ├── oracle_elixir.py       # LoL data
-│   ├── opendota.py            # Dota 2 data
+│   ├── hltv/                  # CS2 data
+│   │   ├── hltv_unified.py
+│   │   └── sockspls_api.py
+│   ├── vlr/                   # Valorant data
+│   │   ├── vlr_unified.py
+│   │   └── vlr_api.py
+│   ├── lol/                   # League of Legends data
+│   │   ├── lol_unified.py
+│   │   ├── lolesports_client.py
+│   │   └── oracle_elixir.py
+│   ├── dota/                  # Dota 2 data
+│   │   ├── dota_unified.py
+│   │   └── opendota_client.py
+│   ├── espn/                  # 🆕 ESPN Traditional Sports
+│   │   ├── espn_client.py     # Base HTTP client
+│   │   ├── espn_config.py     # Leagues/tours config
+│   │   ├── espn_nba.py        # 🏀 NBA collector
+│   │   ├── espn_soccer.py     # ⚽ Soccer collector
+│   │   └── espn_tennis.py     # 🎾 Tennis collector
 │   ├── superbet/              # 🆕 Superbet API integration
 │   │   ├── base.py            # Dataclasses
 │   │   ├── superbet_client.py # Async REST client
 │   │   ├── superbet_esports.py # eSports fetcher
+│   │   ├── superbet_nba.py    # 🏀 NBA with ESPN mapping
 │   │   ├── superbet_tennis.py  # Tennis fetcher
 │   │   ├── superbet_football.py # Football fetcher
 │   │   ├── tournament_cache.py  # Cache with TTL
@@ -186,6 +364,7 @@ capivara-bet-esports/
 │   ├── tracker.py             # Bet tracker
 │   ├── settler.py             # Bet settler
 │   ├── analyzer.py            # Performance analyzer
+│   ├── bet_manager.py         # 🆕 Bet tracking & P&L
 │   └── kelly.py               # Kelly criterion
 │
 ├── analysis/                  # Analysis tools
@@ -223,9 +402,10 @@ capivara-bet-esports/
 │       └── api_health.py      # 🆕 API health status
 │       └── filters.py
 │
-├── telegram/                  # Telegram integration
-│   ├── bot.py
-│   └── notifications.py
+├── notifications/             # Notifications
+│   ├── bot.py                 # Telegram bot base
+│   ├── notifications.py       # Notification system
+│   └── telegram_notifier.py   # 🆕 Enhanced notifier for value bets
 │
 ├── validation/                # Validation tools
 │   ├── clv.py                 # CLV analysis
@@ -244,7 +424,8 @@ capivara-bet-esports/
     ├── logger.py              # Logging utilities
     ├── decorators.py          # Custom decorators
     ├── cache.py               # 🆕 TTL cache implementation
-    └── api_health.py          # 🆕 API health check utilities
+    ├── api_health.py          # 🆕 API health check utilities
+    └── player_registry.py     # 🆕 Player name mapping & fuzzy search
 ```
 
 ## 🎮 Jogos e Esportes Implementados
@@ -262,8 +443,29 @@ capivara-bet-esports/
 
 | Esporte | Fonte de Dados | Superbet | Status |
 |---------|----------------|----------|--------|
-| **Tênis** | Superbet API | ✅ Sport ID: 4 | ✅ Implementado |
-| **Futebol** | Superbet API | ✅ Sport ID: 5 | ✅ Implementado |
+| **🏀 NBA** | ESPN API + Superbet | ✅ Sport ID: 1 | ✅ Implementado |
+| **⚽ Futebol** | ESPN API + Superbet | ✅ Sport ID: 5 | ✅ Implementado |
+| **🎾 Tênis** | ESPN API + Superbet | ✅ Sport ID: 4 | ✅ Implementado |
+
+**NBA Features:**
+- Player stats and game logs
+- Team rosters
+- Game status and live scores
+- Player props with ESPN ID mapping
+
+**Soccer Features:**
+- 13+ leagues (Brasileirão, Premier League, La Liga, Champions League, etc.)
+- Match results and statistics
+- BTTS (Both Teams To Score) checking
+- Over/Under goals analysis
+- Halftime scores
+
+**Tennis Features:**
+- ATP, WTA, and Grand Slam tournaments
+- Match results and set scores
+- Total games over/under
+- Player statistics
+- Head-to-head records
 
 ## 🏦 Casas de Apostas
 
