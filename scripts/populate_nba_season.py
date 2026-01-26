@@ -55,12 +55,12 @@ class NBASeasonPopulator:
                 log.info(f"Fetching games for {date_str}...")
                 
                 try:
-                    # Get scoreboard for the day
+                    # Get scoreboard for the day (returns a list of games)
                     scoreboard = await self.collector.get_scoreboard(date_str)
                     
-                    if scoreboard and 'events' in scoreboard:
-                        for event in scoreboard['events']:
-                            game_data = self._parse_game(event, current_date.date())
+                    if scoreboard:  # scoreboard is already a list
+                        for game in scoreboard:
+                            game_data = self._parse_game_from_list(game, current_date.date())
                             if game_data:
                                 # Add game
                                 game = NBAGame(**game_data)
@@ -68,14 +68,14 @@ class NBASeasonPopulator:
                                 games_added += 1
                                 
                                 # Add player stats for this game
-                                player_stats = await self._get_player_stats(event['id'])
+                                player_stats = await self._get_player_stats(game_data['game_id'], game_data)
                                 for ps in player_stats:
                                     self.db.merge(NBAPlayerGameStats(**ps))
                                     stats_added += 1
                         
                         # Commit after each day
                         self.db.commit()
-                        log.info(f"  Added {len(scoreboard.get('events', []))} games")
+                        log.info(f"  Added {len(scoreboard)} games")
                         
                 except Exception as e:
                     log.error(f"Error fetching games for {date_str}: {e}")
@@ -173,43 +173,225 @@ class NBASeasonPopulator:
             log.error(f"Error parsing game {event.get('id')}: {e}")
             return None
     
-    async def _get_player_stats(self, game_id: str) -> List[Dict]:
+    def _parse_game_from_list(self, game: Dict, game_date) -> Optional[Dict]:
+        """Parse game from scoreboard list into NBAGame data.
+        
+        Args:
+            game: Game data from scoreboard list
+            game_date: Date of the game
+            
+        Returns:
+            Game data dict or None
+        """
+        try:
+            game_id = game.get('game_id', '')
+            
+            # Extract team info and scores
+            home_team = game.get('home_team', '')
+            away_team = game.get('away_team', '')
+            home_score = game.get('home_score', 0)
+            away_score = game.get('away_score', 0)
+            
+            if not home_team or not away_team:
+                return None
+            
+            game_data = {
+                'game_id': game_id,
+                'season': self.season,
+                'season_type': 'regular',  # Can be enhanced to detect playoffs
+                'game_date': game_date,
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_score': home_score,
+                'away_score': away_score,
+                'total_points': home_score + away_score,
+            }
+            
+            return game_data
+            
+        except Exception as e:
+            log.error(f"Error parsing game {game.get('game_id')}: {e}")
+            return None
+    
+    async def _get_player_stats(self, game_id: str, game_data: Dict) -> List[Dict]:
         """Get player stats for a game.
         
         Args:
             game_id: ESPN game ID
+            game_data: Game data dict with team info
             
         Returns:
             List of player stat dicts
-            
-        Note:
-            This is a framework implementation. Full implementation would require:
-            1. ESPN box score API integration
-            2. Parsing player statistics from box score
-            3. Calculating fantasy combos (PRA, stocks, etc.)
-            4. Team context (opponent defensive rating, etc.)
-            
-            For production use, integrate with ESPN API's box score endpoint.
         """
-        # Framework implementation - returns empty list
-        # Real implementation would call ESPN box score API and parse player stats
-        # Example structure for future implementation:
-        # 
-        # box_score = await self.collector.get_box_score(game_id)
-        # player_stats = []
-        # for player in box_score['players']:
-        #     stat = {
-        #         'game_id': game_id,
-        #         'player_id': player['id'],
-        #         'player_name': player['name'],
-        #         'points': player['stats']['points'],
-        #         # ... other stats
-        #         'pts_reb_ast': player['stats']['points'] + rebounds + assists,
-        #     }
-        #     player_stats.append(stat)
-        # return player_stats
+        player_stats = []
         
-        return []
+        try:
+            # Get rosters for both teams
+            home_team = game_data.get('home_team', '')
+            away_team = game_data.get('away_team', '')
+            
+            # Get team rosters
+            home_roster = await self.collector.get_team_roster(home_team)
+            away_roster = await self.collector.get_team_roster(away_team)
+            
+            # Process home team players
+            for player in home_roster:
+                player_id = player.get('player_id')
+                if not player_id:
+                    continue
+                
+                # Get player gamelog
+                gamelog_df = await self.collector.get_player_gamelog_df(player_id)
+                
+                # Find stats for this specific game
+                game_stats = gamelog_df[gamelog_df['event_id'] == game_id]
+                
+                if not game_stats.empty:
+                    stats_row = game_stats.iloc[0]
+                    
+                    # Parse field goals (e.g., "8-16" -> made=8, attempted=16)
+                    fg = str(stats_row.get('field_goals', '0-0')).split('-')
+                    fg_made = int(fg[0]) if len(fg) > 0 else 0
+                    fg_attempted = int(fg[1]) if len(fg) > 1 else 0
+                    
+                    # Parse 3-pointers
+                    three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
+                    three_made = int(three_pt[0]) if len(three_pt) > 0 else 0
+                    three_attempted = int(three_pt[1]) if len(three_pt) > 1 else 0
+                    
+                    # Parse free throws
+                    ft = str(stats_row.get('free_throws', '0-0')).split('-')
+                    ft_made = int(ft[0]) if len(ft) > 0 else 0
+                    ft_attempted = int(ft[1]) if len(ft) > 1 else 0
+                    
+                    # Extract numeric stats
+                    points = int(stats_row.get('points', 0))
+                    rebounds = int(stats_row.get('rebounds', 0))
+                    assists = int(stats_row.get('assists', 0))
+                    blocks = int(stats_row.get('blocks', 0))
+                    steals = int(stats_row.get('steals', 0))
+                    turnovers = int(stats_row.get('turnovers', 0))
+                    fouls = int(stats_row.get('personal_fouls', 0))
+                    
+                    # Parse minutes (e.g., "37" -> 37)
+                    minutes_str = str(stats_row.get('minutes', '0'))
+                    minutes = int(minutes_str.split(':')[0]) if ':' in minutes_str else int(minutes_str) if minutes_str.isdigit() else 0
+                    
+                    stat_dict = {
+                        'game_id': game_id,
+                        'player_id': player_id,
+                        'player_name': player.get('name', ''),
+                        'team': home_team,
+                        'is_home': True,
+                        'minutes': minutes,
+                        'points': points,
+                        'field_goals_made': fg_made,
+                        'field_goals_attempted': fg_attempted,
+                        'fg_percentage': float(stats_row.get('fg_percentage', 0)),
+                        'three_pointers_made': three_made,
+                        'three_pointers_attempted': three_attempted,
+                        'three_percentage': float(stats_row.get('three_percentage', 0)),
+                        'free_throws_made': ft_made,
+                        'free_throws_attempted': ft_attempted,
+                        'ft_percentage': float(stats_row.get('ft_percentage', 0)),
+                        'rebounds_total': rebounds,
+                        'assists': assists,
+                        'steals': steals,
+                        'blocks': blocks,
+                        'turnovers': turnovers,
+                        'personal_fouls': fouls,
+                        # Fantasy/Props combos
+                        'pts_reb_ast': points + rebounds + assists,  # PRA combo
+                        'pts_reb': points + rebounds,
+                        'pts_ast': points + assists,
+                        'reb_ast': rebounds + assists,
+                        'stocks': steals + blocks,  # Stocks
+                        'opponent': away_team,
+                    }
+                    
+                    player_stats.append(stat_dict)
+            
+            # Process away team players
+            for player in away_roster:
+                player_id = player.get('player_id')
+                if not player_id:
+                    continue
+                
+                # Get player gamelog
+                gamelog_df = await self.collector.get_player_gamelog_df(player_id)
+                
+                # Find stats for this specific game
+                game_stats = gamelog_df[gamelog_df['event_id'] == game_id]
+                
+                if not game_stats.empty:
+                    stats_row = game_stats.iloc[0]
+                    
+                    # Parse field goals
+                    fg = str(stats_row.get('field_goals', '0-0')).split('-')
+                    fg_made = int(fg[0]) if len(fg) > 0 else 0
+                    fg_attempted = int(fg[1]) if len(fg) > 1 else 0
+                    
+                    # Parse 3-pointers
+                    three_pt = str(stats_row.get('three_pointers', '0-0')).split('-')
+                    three_made = int(three_pt[0]) if len(three_pt) > 0 else 0
+                    three_attempted = int(three_pt[1]) if len(three_pt) > 1 else 0
+                    
+                    # Parse free throws
+                    ft = str(stats_row.get('free_throws', '0-0')).split('-')
+                    ft_made = int(ft[0]) if len(ft) > 0 else 0
+                    ft_attempted = int(ft[1]) if len(ft) > 1 else 0
+                    
+                    # Extract numeric stats
+                    points = int(stats_row.get('points', 0))
+                    rebounds = int(stats_row.get('rebounds', 0))
+                    assists = int(stats_row.get('assists', 0))
+                    blocks = int(stats_row.get('blocks', 0))
+                    steals = int(stats_row.get('steals', 0))
+                    turnovers = int(stats_row.get('turnovers', 0))
+                    fouls = int(stats_row.get('personal_fouls', 0))
+                    
+                    # Parse minutes
+                    minutes_str = str(stats_row.get('minutes', '0'))
+                    minutes = int(minutes_str.split(':')[0]) if ':' in minutes_str else int(minutes_str) if minutes_str.isdigit() else 0
+                    
+                    stat_dict = {
+                        'game_id': game_id,
+                        'player_id': player_id,
+                        'player_name': player.get('name', ''),
+                        'team': away_team,
+                        'is_home': False,
+                        'minutes': minutes,
+                        'points': points,
+                        'field_goals_made': fg_made,
+                        'field_goals_attempted': fg_attempted,
+                        'fg_percentage': float(stats_row.get('fg_percentage', 0)),
+                        'three_pointers_made': three_made,
+                        'three_pointers_attempted': three_attempted,
+                        'three_percentage': float(stats_row.get('three_percentage', 0)),
+                        'free_throws_made': ft_made,
+                        'free_throws_attempted': ft_attempted,
+                        'ft_percentage': float(stats_row.get('ft_percentage', 0)),
+                        'rebounds_total': rebounds,
+                        'assists': assists,
+                        'steals': steals,
+                        'blocks': blocks,
+                        'turnovers': turnovers,
+                        'personal_fouls': fouls,
+                        # Fantasy/Props combos
+                        'pts_reb_ast': points + rebounds + assists,
+                        'pts_reb': points + rebounds,
+                        'pts_ast': points + assists,
+                        'reb_ast': rebounds + assists,
+                        'stocks': steals + blocks,
+                        'opponent': home_team,
+                    }
+                    
+                    player_stats.append(stat_dict)
+            
+        except Exception as e:
+            log.error(f"Error fetching player stats for game {game_id}: {e}")
+        
+        return player_stats
     
     async def _calculate_team_stats(self):
         """Calculate aggregated team statistics from games."""

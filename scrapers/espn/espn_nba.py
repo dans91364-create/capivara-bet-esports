@@ -170,28 +170,52 @@ class ESPNNBACollector:
             DataFrame with game log
         """
         try:
-            endpoint = f"/basketball/nba/athletes/{player_id}/gamelog"
+            # Use the correct ESPN API endpoint for gamelog
+            url = f"https://site.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/{player_id}/gamelog"
             params = {}
             if season:
                 params["season"] = season
             
-            data = await self.client.get(endpoint, params=params)
+            # Make direct request with aiohttp instead of using client.get
+            await self.client._ensure_session()
+            await self.client._rate_limit()
+            
+            async with self.client.session.get(url, params=params) as response:
+                response.raise_for_status()
+                data = await response.json()
             
             games = []
-            for event in data.get("events", []):
-                game_stats = {
-                    "date": event.get("date"),
-                    "opponent": event.get("opponent", {}).get("abbreviation", ""),
-                    "result": event.get("result", ""),
-                }
-                
-                # Add statistics
-                for stat in event.get("stats", []):
-                    name = stat.get("name", "").lower().replace(" ", "_")
-                    value = stat.get("value", 0)
-                    game_stats[name] = value
-                
-                games.append(game_stats)
+            # Parse the nested structure: seasonTypes -> categories -> events
+            for season_type in data.get("seasonTypes", []):
+                for category in season_type.get("categories", []):
+                    for event in category.get("events", []):
+                        # Stats array indices:
+                        # 0: MIN, 1: FG, 2: FG%, 3: 3PT, 4: 3P%, 5: FT, 6: FT%,
+                        # 7: REB, 8: AST, 9: BLK, 10: STL, 11: PF, 12: TO, 13: PTS
+                        stats = event.get("stats", [])
+                        
+                        game_stats = {
+                            "event_id": event.get("eventId", ""),
+                            "opponent_id": event.get("opponentId", ""),
+                        }
+                        
+                        if len(stats) >= 14:
+                            game_stats["minutes"] = stats[0]
+                            game_stats["field_goals"] = stats[1]
+                            game_stats["fg_percentage"] = stats[2]
+                            game_stats["three_pointers"] = stats[3]
+                            game_stats["three_percentage"] = stats[4]
+                            game_stats["free_throws"] = stats[5]
+                            game_stats["ft_percentage"] = stats[6]
+                            game_stats["rebounds"] = stats[7]
+                            game_stats["assists"] = stats[8]
+                            game_stats["blocks"] = stats[9]
+                            game_stats["steals"] = stats[10]
+                            game_stats["personal_fouls"] = stats[11]
+                            game_stats["turnovers"] = stats[12]
+                            game_stats["points"] = stats[13]
+                        
+                        games.append(game_stats)
             
             return pd.DataFrame(games)
             
@@ -230,6 +254,44 @@ class ESPNNBACollector:
         except Exception as e:
             log.error(f"Failed to fetch roster for team {team_id}: {e}")
             return pd.DataFrame()
+    
+    async def get_team_roster(self, team_abbrev: str) -> List[Dict]:
+        """Get team roster with player IDs.
+        
+        Args:
+            team_abbrev: Team abbreviation (e.g., "LAL", "BOS")
+            
+        Returns:
+            List of player dictionaries with IDs and info
+        """
+        try:
+            # Use the correct ESPN API endpoint for team roster
+            url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{team_abbrev}/roster"
+            
+            # Make direct request with aiohttp
+            await self.client._ensure_session()
+            await self.client._rate_limit()
+            
+            async with self.client.session.get(url) as response:
+                response.raise_for_status()
+                data = await response.json()
+            
+            players = []
+            for athlete in data.get("athletes", []):
+                player = {
+                    "player_id": athlete.get("id"),
+                    "name": athlete.get("displayName"),
+                    "jersey": athlete.get("jersey"),
+                    "position": athlete.get("position", {}).get("abbreviation", ""),
+                }
+                players.append(player)
+            
+            log.info(f"Fetched {len(players)} players from {team_abbrev} roster")
+            return players
+            
+        except Exception as e:
+            log.error(f"Failed to fetch roster for team {team_abbrev}: {e}")
+            return []
     
     async def get_scoreboard(self, date: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get NBA scoreboard for a specific date.
