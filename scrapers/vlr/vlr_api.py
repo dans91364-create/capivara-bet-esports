@@ -12,6 +12,21 @@ from scrapers.vlr.base import (
 from utils.logger import log
 
 
+def safe_parse_dataclass(dataclass_type, data: dict):
+    """Safely parse data into a dataclass, ignoring unknown fields.
+    
+    Args:
+        dataclass_type: The dataclass type to instantiate
+        data: Dictionary of data to parse
+        
+    Returns:
+        Instance of dataclass_type with known fields populated
+    """
+    known_fields = dataclass_type.__dataclass_fields__.keys()
+    filtered_data = {k: v for k, v in data.items() if k in known_fields}
+    return dataclass_type(**filtered_data)
+
+
 class VLRAPIClient:
     """Client for the vlrggapi REST API.
     
@@ -76,7 +91,7 @@ class VLRAPIClient:
             if "data" in data and "segments" in data["data"]:
                 for match_data in data["data"]["segments"]:
                     try:
-                        matches.append(ValorantMatch(**match_data))
+                        matches.append(safe_parse_dataclass(ValorantMatch, match_data))
                     except (TypeError, KeyError) as e:
                         log.warning(f"Failed to parse match data: {e}")
                         continue
@@ -122,7 +137,7 @@ class VLRAPIClient:
             if "data" in data and "segments" in data["data"]:
                 for result_data in data["data"]["segments"]:
                     try:
-                        results.append(ValorantResult(**result_data))
+                        results.append(safe_parse_dataclass(ValorantResult, result_data))
                     except (TypeError, KeyError) as e:
                         log.warning(f"Failed to parse result data: {e}")
                         continue
@@ -149,7 +164,7 @@ class VLRAPIClient:
             if "data" in data:
                 for team_data in data["data"]:
                     try:
-                        teams.append(ValorantTeam(**team_data))
+                        teams.append(safe_parse_dataclass(ValorantTeam, team_data))
                     except (TypeError, KeyError) as e:
                         log.warning(f"Failed to parse team data: {e}")
                         continue
@@ -177,7 +192,7 @@ class VLRAPIClient:
             if "data" in data and "segments" in data["data"]:
                 for player_data in data["data"]["segments"]:
                     try:
-                        players.append(ValorantPlayer(**player_data))
+                        players.append(safe_parse_dataclass(ValorantPlayer, player_data))
                     except (TypeError, KeyError) as e:
                         log.warning(f"Failed to parse player data: {e}")
                         continue
@@ -205,7 +220,7 @@ class VLRAPIClient:
             if "data" in data and "segments" in data["data"]:
                 for event_data in data["data"]["segments"]:
                     try:
-                        events.append(ValorantEvent(**event_data))
+                        events.append(safe_parse_dataclass(ValorantEvent, event_data))
                     except (TypeError, KeyError) as e:
                         log.warning(f"Failed to parse event data: {e}")
                         continue
