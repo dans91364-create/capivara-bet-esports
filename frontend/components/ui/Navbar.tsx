@@ -112,6 +112,14 @@ export default function Navbar() {
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowSportsMenu(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Close sports menu"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+              setShowSportsMenu(false);
+            }
+          }}
         />
       )}
     </nav>
