@@ -1,131 +1,187 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import PlayerProps from "@/components/PlayerProps";
-import { searchPlayers, getPlayerProps, Player, PlayerProps as PlayerPropsType } from "@/lib/api";
+import SportTabs from "@/components/SportTabs";
+import TeamCard from "@/components/TeamCard";
+import PlayerList from "@/components/PlayerList";
+import PlayerStatsPanel from "@/components/PlayerStatsPanel";
+import { getTeamsByGame, getPlayersByTeam, getPlayerStats, Team, TeamPlayer, PlayerStats } from "@/lib/api";
+
+const SPORTS = ["valorant", "cs2", "lol", "dota2", "nba"];
 
 export default function PropsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Player[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerPropsType | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [selectedSport, setSelectedSport] = useState<string>("valorant");
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [players, setPlayers] = useState<TeamPlayer[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<TeamPlayer | null>(null);
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  // Load teams when sport changes
+  useEffect(() => {
+    loadTeams(selectedSport);
+  }, [selectedSport]);
 
+  const loadTeams = async (sport: string) => {
     try {
-      setLoading(true);
-      const results = await searchPlayers(searchQuery);
-      setSearchResults(results);
+      setLoadingTeams(true);
+      setTeams([]);
+      setSelectedTeam(null);
+      setPlayers([]);
+      setSelectedPlayer(null);
+      setPlayerStats(null);
+      
+      const teamsData = await getTeamsByGame(sport);
+      setTeams(teamsData);
     } catch (error) {
-      console.error("Error searching players:", error);
+      console.error("Error loading teams:", error);
     } finally {
-      setLoading(false);
+      setLoadingTeams(false);
     }
   };
 
-  const handleSelectPlayer = async (player: Player) => {
+  const handleSelectTeam = async (team: Team) => {
+    setSelectedTeam(team);
+    setSelectedPlayer(null);
+    setPlayerStats(null);
+    
     try {
-      setLoading(true);
-      const props = await getPlayerProps(player.player_id);
-      setSelectedPlayer(props);
+      setLoadingPlayers(true);
+      const playersData = await getPlayersByTeam(team.team);
+      setPlayers(playersData);
     } catch (error) {
-      console.error("Error fetching player props:", error);
+      console.error("Error loading players:", error);
+      setPlayers([]);
     } finally {
-      setLoading(false);
+      setLoadingPlayers(false);
     }
+  };
+
+  const handleSelectPlayer = async (player: TeamPlayer) => {
+    setSelectedPlayer(player);
+    
+    try {
+      setLoadingStats(true);
+      const stats = await getPlayerStats(player.player_id);
+      setPlayerStats(stats);
+    } catch (error) {
+      console.error("Error loading player stats:", error);
+      setPlayerStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleBackToTeams = () => {
+    setSelectedTeam(null);
+    setPlayers([]);
+    setSelectedPlayer(null);
+    setPlayerStats(null);
+  };
+
+  const handleBackToPlayers = () => {
+    setSelectedPlayer(null);
+    setPlayerStats(null);
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">Player Props</h1>
-        <p className="text-slate-400">Análise de props de jogadores</p>
+        <p className="text-slate-400">Análise hierárquica de props por esporte, time e jogador</p>
       </div>
 
-      {/* Search */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Buscar Jogador</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Digite o nome do jogador..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? "Buscando..." : "Buscar"}
-            </Button>
-          </div>
+      {/* Sport Tabs */}
+      <div className="mb-8">
+        <SportTabs
+          sports={SPORTS}
+          selectedSport={selectedSport}
+          onSelectSport={setSelectedSport}
+        />
+      </div>
 
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {searchResults.map((player) => (
-                <div
-                  key={player.player_id}
-                  onClick={() => handleSelectPlayer(player)}
-                  className="p-3 bg-slate-700 rounded-md hover:bg-slate-600 cursor-pointer transition-colors"
-                >
-                  <div className="font-medium text-white">{player.player_name}</div>
-                  <div className="text-sm text-slate-400">
-                    {player.team} - {player.sport?.toUpperCase()}
-                  </div>
+      {/* Teams Grid */}
+      {!selectedTeam && (
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Times - {selectedSport.toUpperCase()}
+          </h2>
+          
+          {loadingTeams ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white"></div>
+            </div>
+          ) : teams.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-slate-400">
+                  <p className="text-lg">Nenhum time encontrado</p>
+                  <p className="text-sm mt-2">Não há dados disponíveis para {selectedSport.toUpperCase()}</p>
                 </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {teams.map((team) => (
+                <TeamCard
+                  key={team.team}
+                  team={team}
+                  onClick={() => handleSelectTeam(team)}
+                />
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Player Props */}
+      {/* Players List */}
+      {selectedTeam && !selectedPlayer && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-white">
+              Jogadores - {selectedTeam.team}
+            </h2>
+            <Button onClick={handleBackToTeams} variant="outline">
+              ← Voltar para Times
+            </Button>
+          </div>
+          
+          <Card>
+            <CardContent className="p-6">
+              <PlayerList
+                players={players}
+                onSelectPlayer={handleSelectPlayer}
+                loading={loadingPlayers}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Player Stats */}
       {selectedPlayer && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{selectedPlayer.player_name}</CardTitle>
-              <p className="text-slate-400">{selectedPlayer.team}</p>
-            </CardHeader>
-            <CardContent>
-              <PlayerProps props={selectedPlayer.props} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Últimos Jogos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {selectedPlayer.recent_games.map((game, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-slate-700 rounded-md flex justify-between items-center"
-                  >
-                    <div>
-                      <div className="font-medium text-white">
-                        {game.is_home ? "vs" : "@"} {game.opponent}
-                      </div>
-                      <div className="text-sm text-slate-400">{game.game_date}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white">
-                        {game.points}pts / {game.rebounds_total}reb / {game.assists}ast
-                      </div>
-                      <div className="text-sm text-slate-400">{game.minutes} min</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                Estatísticas - {selectedPlayer.player_name}
+              </h2>
+              <p className="text-slate-400 mt-1">{selectedTeam?.team}</p>
+            </div>
+            <Button onClick={handleBackToPlayers} variant="outline">
+              ← Voltar para Jogadores
+            </Button>
+          </div>
+          
+          {playerStats && (
+            <PlayerStatsPanel stats={playerStats} loading={loadingStats} />
+          )}
         </div>
       )}
     </div>
