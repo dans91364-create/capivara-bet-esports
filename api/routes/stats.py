@@ -52,7 +52,8 @@ async def get_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
 @router.get("/stats/teams")
 async def get_team_stats(
     game: Optional[str] = Query(None, description="Filter by game type"),
-    limit: int = Query(20, description="Number of teams to return")
+    limit: int = Query(20, description="Number of teams to return"),
+    db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Get team rankings with win rate.
@@ -64,75 +65,70 @@ async def get_team_stats(
     Returns:
         List of teams with their statistics
     """
-    db: Session = Depends(get_db)()
+    # Build query to get all matches
+    query = db.query(EsportsMatch).filter(EsportsMatch.winner.isnot(None))
     
-    try:
-        # Build query to get all matches
-        query = db.query(EsportsMatch).filter(EsportsMatch.winner.isnot(None))
-        
-        if game:
-            query = query.filter(EsportsMatch.game == game)
-        
-        matches = query.all()
-        
-        # Calculate team stats
-        team_stats = {}
-        
-        for match in matches:
-            # Process team1
-            if match.team1 not in team_stats:
-                team_stats[match.team1] = {
-                    "team": match.team1,
-                    "game": match.game,
-                    "matches_played": 0,
-                    "wins": 0,
-                    "losses": 0,
-                    "win_rate": 0.0
-                }
-            
-            team_stats[match.team1]["matches_played"] += 1
-            if match.winner == match.team1:
-                team_stats[match.team1]["wins"] += 1
-            else:
-                team_stats[match.team1]["losses"] += 1
-            
-            # Process team2
-            if match.team2 not in team_stats:
-                team_stats[match.team2] = {
-                    "team": match.team2,
-                    "game": match.game,
-                    "matches_played": 0,
-                    "wins": 0,
-                    "losses": 0,
-                    "win_rate": 0.0
-                }
-            
-            team_stats[match.team2]["matches_played"] += 1
-            if match.winner == match.team2:
-                team_stats[match.team2]["wins"] += 1
-            else:
-                team_stats[match.team2]["losses"] += 1
-        
-        # Calculate win rates and filter teams with at least 3 matches
-        result = []
-        for team, stats in team_stats.items():
-            if stats["matches_played"] >= 3:
-                stats["win_rate"] = round(stats["wins"] / stats["matches_played"] * 100, 2)
-                result.append(stats)
-        
-        # Sort by win rate and then by matches played
-        result.sort(key=lambda x: (x["win_rate"], x["matches_played"]), reverse=True)
-        
-        return result[:limit]
+    if game:
+        query = query.filter(EsportsMatch.game == game)
     
-    finally:
-        db.close()
+    matches = query.all()
+    
+    # Calculate team stats
+    team_stats = {}
+    
+    for match in matches:
+        # Process team1
+        if match.team1 not in team_stats:
+            team_stats[match.team1] = {
+                "team": match.team1,
+                "game": match.game,
+                "matches_played": 0,
+                "wins": 0,
+                "losses": 0,
+                "win_rate": 0.0
+            }
+        
+        team_stats[match.team1]["matches_played"] += 1
+        if match.winner == match.team1:
+            team_stats[match.team1]["wins"] += 1
+        else:
+            team_stats[match.team1]["losses"] += 1
+        
+        # Process team2
+        if match.team2 not in team_stats:
+            team_stats[match.team2] = {
+                "team": match.team2,
+                "game": match.game,
+                "matches_played": 0,
+                "wins": 0,
+                "losses": 0,
+                "win_rate": 0.0
+            }
+        
+        team_stats[match.team2]["matches_played"] += 1
+        if match.winner == match.team2:
+            team_stats[match.team2]["wins"] += 1
+        else:
+            team_stats[match.team2]["losses"] += 1
+    
+    # Calculate win rates and filter teams with at least 3 matches
+    result = []
+    for team, stats in team_stats.items():
+        if stats["matches_played"] >= 3:
+            stats["win_rate"] = round(stats["wins"] / stats["matches_played"] * 100, 2)
+            result.append(stats)
+    
+    # Sort by win rate and then by matches played
+    result.sort(key=lambda x: (x["win_rate"], x["matches_played"]), reverse=True)
+    
+    return result[:limit]
 
 
 @router.get("/stats/recent-results")
 async def get_recent_results(
     limit: int = Query(10, description="Number of results to return"),
-    game: Optional[str] = Query(None, description="Filter by game type")
+    game: Optional[str] = Query(None, description="Filter by game type"),
+    db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Get recent match results.
@@ -144,40 +140,35 @@ async def get_recent_results(
     Returns:
         List of recent matches
     """
-    db: Session = Depends(get_db)()
+    query = db.query(EsportsMatch).filter(EsportsMatch.winner.isnot(None))
     
-    try:
-        query = db.query(EsportsMatch).filter(EsportsMatch.winner.isnot(None))
-        
-        if game:
-            query = query.filter(EsportsMatch.game == game)
-        
-        matches = query.order_by(desc(EsportsMatch.match_date)).limit(limit).all()
-        
-        result = []
-        for match in matches:
-            result.append({
-                "id": match.id,
-                "game": match.game,
-                "tournament": match.tournament,
-                "match_date": match.match_date.isoformat() if match.match_date else None,
-                "team1": match.team1,
-                "team2": match.team2,
-                "team1_score": match.team1_score,
-                "team2_score": match.team2_score,
-                "winner": match.winner,
-                "best_of": match.best_of
-            })
-        
-        return result
+    if game:
+        query = query.filter(EsportsMatch.game == game)
     
-    finally:
-        db.close()
+    matches = query.order_by(desc(EsportsMatch.match_date)).limit(limit).all()
+    
+    result = []
+    for match in matches:
+        result.append({
+            "id": match.id,
+            "game": match.game,
+            "tournament": match.tournament,
+            "match_date": match.match_date.isoformat() if match.match_date else None,
+            "team1": match.team1,
+            "team2": match.team2,
+            "team1_score": match.team1_score,
+            "team2_score": match.team2_score,
+            "winner": match.winner,
+            "best_of": match.best_of
+        })
+    
+    return result
 
 
 @router.get("/stats/tournaments")
 async def get_tournaments(
-    game: Optional[str] = Query(None, description="Filter by game type")
+    game: Optional[str] = Query(None, description="Filter by game type"),
+    db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Get active tournaments with match counts.
@@ -188,31 +179,25 @@ async def get_tournaments(
     Returns:
         List of tournaments with match counts
     """
-    db: Session = Depends(get_db)()
+    query = db.query(
+        EsportsMatch.tournament,
+        EsportsMatch.game,
+        func.count(EsportsMatch.id).label('match_count'),
+        func.max(EsportsMatch.match_date).label('latest_match')
+    ).group_by(EsportsMatch.tournament, EsportsMatch.game)
     
-    try:
-        query = db.query(
-            EsportsMatch.tournament,
-            EsportsMatch.game,
-            func.count(EsportsMatch.id).label('match_count'),
-            func.max(EsportsMatch.match_date).label('latest_match')
-        ).group_by(EsportsMatch.tournament, EsportsMatch.game)
-        
-        if game:
-            query = query.filter(EsportsMatch.game == game)
-        
-        tournaments = query.order_by(desc('latest_match')).all()
-        
-        result = []
-        for tournament, game_name, match_count, latest_match in tournaments:
-            result.append({
-                "tournament": tournament,
-                "game": game_name,
-                "match_count": match_count,
-                "latest_match": latest_match.isoformat() if latest_match else None
-            })
-        
-        return result
+    if game:
+        query = query.filter(EsportsMatch.game == game)
     
-    finally:
-        db.close()
+    tournaments = query.order_by(desc('latest_match')).all()
+    
+    result = []
+    for tournament, game_name, match_count, latest_match in tournaments:
+        result.append({
+            "tournament": tournament,
+            "game": game_name,
+            "match_count": match_count,
+            "latest_match": latest_match.isoformat() if latest_match else None
+        })
+    
+    return result
