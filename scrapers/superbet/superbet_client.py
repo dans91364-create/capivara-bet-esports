@@ -133,12 +133,32 @@ class SuperbetClient:
         Returns:
             List of SuperbetEvent objects
         """
-        params = {'sportIds': sport_id}
+        from datetime import datetime, timedelta, timezone
         
-        if start_date:
-            params['startDate'] = start_date.isoformat()
-        if end_date:
-            params['endDate'] = end_date.isoformat()
+        now = datetime.now(timezone.utc)
+        if not start_date:
+            start_date = now
+        if not end_date:
+            end_date = now + timedelta(days=1)
+        
+        # Formato correto: YYYY-MM-DD HH:MM:SS
+        if isinstance(start_date, date) and not isinstance(start_date, datetime):
+            start_str = f"{start_date.isoformat()} 00:00:00"
+        else:
+            start_str = start_date.strftime("%Y-%m-%d %H:%M:%S")
+            
+        if isinstance(end_date, date) and not isinstance(end_date, datetime):
+            end_str = f"{end_date.isoformat()} 23:59:59"
+        else:
+            end_str = end_date.strftime("%Y-%m-%d %H:%M:%S")
+        
+        params = {
+            'sportId': sport_id,
+            'currentStatus': 'active',
+            'offerState': 'prematch',
+            'startDate': start_str,
+            'endDate': end_str,
+        }
         
         data = await self._get("events/by-date", params=params)
         return self._parse_events(data)
@@ -195,31 +215,44 @@ class SuperbetClient:
         """
         events = []
         
-        for item in data.get('events', []):
+        for item in (data.get('data', []) or data.get('events', [])):
             try:
-                # Parse teams
-                participants = item.get('participants', [])
-                team1 = participants[0].get('name', 'Team 1') if len(participants) > 0 else 'Team 1'
-                team2 = participants[1].get('name', 'Team 2') if len(participants) > 1 else 'Team 2'
+                # Parse teams - novo formato usa matchName com separador
+                match_name = item.get('matchName', '')
+                if match_name and chr(183) in match_name:  # · separador
+                    parts = match_name.split(chr(183))
+                    team1 = parts[0].strip() if len(parts) > 0 else 'Team 1'
+                    team2 = parts[1].strip() if len(parts) > 1 else 'Team 2'
+                else:
+                    participants = item.get('participants', [])
+                    team1 = participants[0].get('name', 'Team 1') if len(participants) > 0 else 'Team 1'
+                    team2 = participants[1].get('name', 'Team 2') if len(participants) > 1 else 'Team 2'
                 
-                # Parse markets
+                # Parse markets/odds - novo formato
                 markets = []
-                for market_data in item.get('markets', []):
-                    odds_list = []
-                    for selection in market_data.get('selections', []):
-                        odd = SuperbetOdds(
-                            outcome_id=str(selection.get('id')),
-                            outcome_name=selection.get('name', ''),
-                            odds=float(selection.get('odds', 1.0)),
-                            is_active=selection.get('active', True),
-                        )
-                        odds_list.append(odd)
-                    
+                raw_odds = item.get('odds', [])
+                markets_dict = {}
+                for odd_data in raw_odds:
+                    market_uuid = odd_data.get('marketUuid', 'default')
+                    if market_uuid not in markets_dict:
+                        markets_dict[market_uuid] = {
+                            'id': str(odd_data.get('marketId', '')),
+                            'name': odd_data.get('marketName', ''),
+                            'odds': []
+                        }
+                    odd = SuperbetOdds(
+                        outcome_id=str(odd_data.get('outcomeId', '')),
+                        outcome_name=odd_data.get('name', ''),
+                        odds=float(odd_data.get('price', 1.0)),
+                        is_active=odd_data.get('status') == 'active',
+                    )
+                    markets_dict[market_uuid]['odds'].append(odd)
+                for md in markets_dict.values():
                     market = SuperbetMarket(
-                        market_id=str(market_data.get('id')),
-                        market_name=market_data.get('name', ''),
-                        market_type=market_data.get('type', ''),
-                        odds_list=odds_list,
+                        market_id=md['id'],
+                        market_name=md['name'],
+                        market_type='',
+                        odds_list=md['odds'],
                     )
                     markets.append(market)
                 
@@ -231,7 +264,7 @@ class SuperbetClient:
                     sport_name=item.get('sportName', ''),
                     tournament_id=str(item.get('tournamentId')) if item.get('tournamentId') else None,
                     tournament_name=item.get('tournamentName'),
-                    start_time=datetime.fromisoformat(item.get('startTime', '').replace('Z', '+00:00')),
+                    start_time=datetime.fromisoformat(item.get('utcDate', item.get('startTime', '')).replace('Z', '+00:00')),
                     team1=team1,
                     team2=team2,
                     markets=markets,
