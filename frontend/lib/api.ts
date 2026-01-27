@@ -176,3 +176,82 @@ export async function healthCheck(): Promise<{
 }> {
   return fetchAPI("/api/health");
 }
+
+/**
+ * Stats types
+ */
+export interface OverviewStats {
+  total_matches: number;
+  finished_matches: number;
+  recent_matches: number;
+  breakdown_by_game: Record<string, number>;
+}
+
+export interface TeamStats {
+  team: string;
+  game: string;
+  matches_played: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+}
+
+export interface RecentResult {
+  id: number;
+  game: string;
+  tournament: string;
+  match_date: string | null;
+  team1: string;
+  team2: string;
+  team1_score: number;
+  team2_score: number;
+  winner: string;
+  best_of: number;
+}
+
+export interface Tournament {
+  tournament: string;
+  game: string;
+  match_count: number;
+  latest_match: string | null;
+}
+
+/**
+ * Get overview statistics.
+ */
+export async function getOverview(): Promise<OverviewStats> {
+  return fetchAPI<OverviewStats>("/api/stats/overview");
+}
+
+/**
+ * Get team statistics.
+ */
+export async function getTeamStats(game?: string): Promise<TeamStats[]> {
+  const searchParams = new URLSearchParams();
+  if (game) searchParams.set("game", game);
+
+  const query = searchParams.toString();
+  return fetchAPI<TeamStats[]>(`/api/stats/teams${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get recent match results.
+ */
+export async function getRecentResults(limit?: number): Promise<RecentResult[]> {
+  const searchParams = new URLSearchParams();
+  if (limit) searchParams.set("limit", limit.toString());
+
+  const query = searchParams.toString();
+  return fetchAPI<RecentResult[]>(`/api/stats/recent-results${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get tournaments.
+ */
+export async function getTournaments(game?: string): Promise<Tournament[]> {
+  const searchParams = new URLSearchParams();
+  if (game) searchParams.set("game", game);
+
+  const query = searchParams.toString();
+  return fetchAPI<Tournament[]>(`/api/stats/tournaments${query ? `?${query}` : ""}`);
+}

@@ -1,7 +1,7 @@
 """FastAPI main application."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import games, players, props, health
+from api.routes import games, players, props, health, stats
 
 app = FastAPI(
     title="Capivara Bet API",
@@ -23,6 +23,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(games.router, prefix="/api", tags=["games"])
 app.include_router(players.router, prefix="/api", tags=["players"])
 app.include_router(props.router, prefix="/api", tags=["props"])
+app.include_router(stats.router, prefix="/api", tags=["stats"])
 
 
 @app.get("/")
