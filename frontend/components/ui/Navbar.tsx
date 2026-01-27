@@ -11,6 +11,7 @@ export default function Navbar() {
     { href: "/", label: "Dashboard" },
     { href: "/games", label: "Jogos" },
     { href: "/props", label: "Player Props" },
+    { href: "/value-bets", label: "Value Bets" },
   ];
 
   return (

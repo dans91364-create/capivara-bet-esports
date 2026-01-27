@@ -334,3 +334,53 @@ export async function getPlayerStats(playerId: string, limit?: number): Promise<
   const query = searchParams.toString();
   return fetchAPI<PlayerStats>(`/api/players/${encodeURIComponent(playerId)}/stats${query ? `?${query}` : ""}`);
 }
+
+/**
+ * Value Bets types
+ */
+export interface ValueBet {
+  id: string;
+  sport: string;
+  game: string;
+  league: string;
+  start_time: string;
+  market: string;
+  selection: string;
+  odds: number;
+  bookmaker: string;
+  model_probability: number;
+  implied_probability: number;
+  edge: number;
+  confidence: number;
+  expected_value: number;
+  kelly_stake: number;
+  suggested_stake: number;
+  reasoning?: string;
+}
+
+export interface ValueBetsSummary {
+  total_bets: number;
+  by_sport: Record<string, number>;
+  avg_edge: number;
+  total_suggested_stake: number;
+}
+
+/**
+ * Get value bets of the day.
+ */
+export async function getValueBets(params?: {
+  sport?: string;
+  min_edge?: number;
+  min_confidence?: number;
+}): Promise<{ value_bets: ValueBet[]; summary: ValueBetsSummary }> {
+  const searchParams = new URLSearchParams();
+  if (params?.sport) searchParams.set("sport", params.sport);
+  if (params?.min_edge !== undefined) searchParams.set("min_edge", params.min_edge.toString());
+  if (params?.min_confidence !== undefined) searchParams.set("min_confidence", params.min_confidence.toString());
+
+  const query = searchParams.toString();
+  return fetchAPI<{ value_bets: ValueBet[]; summary: ValueBetsSummary }>(
+    `/api/value-bets${query ? `?${query}` : ""}`
+  );
+}
+
