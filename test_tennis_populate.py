@@ -39,8 +39,10 @@ def test_parse_match_with_espn_data():
     assert result['tournament'] == 'Australian Open', f"Expected tournament 'Australian Open', got {result['tournament']}"
     assert result['player1'] == 'Novak Djokovic', f"Expected player1 'Novak Djokovic', got {result['player1']}"
     assert result['player2'] == 'Carlos Alcaraz', f"Expected player2 'Carlos Alcaraz', got {result['player2']}"
-    assert result['player1_seed'] == '1', f"Expected player1_seed '1', got {result['player1_seed']}"
-    assert result['player2_seed'] == '2', f"Expected player2_seed '2', got {result['player2_seed']}"
+    assert result['player1_seed'] == 1, f"Expected player1_seed 1 (int), got {result['player1_seed']}"
+    assert result['player2_seed'] == 2, f"Expected player2_seed 2 (int), got {result['player2_seed']}"
+    assert isinstance(result['player1_seed'], int), f"player1_seed should be int, got {type(result['player1_seed'])}"
+    assert isinstance(result['player2_seed'], int), f"player2_seed should be int, got {type(result['player2_seed'])}"
     assert result['round'] == 'Final', f"Expected round 'Final', got {result['round']}"
     assert result['winner'] == 'player1', f"Expected winner 'player1', got {result['winner']}"
     assert result['match_date'] == match_date, f"Expected match_date {match_date}, got {result['match_date']}"
@@ -93,6 +95,31 @@ def test_parse_match_with_tbd_players():
     print("✓ Test passed: _parse_match returns None for TBD players")
 
 
+def test_parse_match_with_non_numeric_seeds():
+    """Test that _parse_match handles non-numeric seed values correctly."""
+    populator = TennisSeasonPopulator(season="2026")
+    
+    # ESPN data with non-numeric seed values
+    espn_match_data = {
+        'match_id': '157-2026',
+        'tour': 'wta',
+        'name': 'Australian Open',
+        'round': 'Round 1',
+        'player1_name': 'Iga Swiatek',
+        'player1_seed': 'WC',  # Wild card - non-numeric
+        'player2_name': 'Aryna Sabalenka',
+        'player2_seed': 'Q',  # Qualifier - non-numeric
+    }
+    
+    match_date = datetime(2026, 1, 11).date()
+    result = populator._parse_match(espn_match_data, 'wta', match_date)
+    
+    assert result is not None, "Parse match should handle non-numeric seeds"
+    assert result['player1_seed'] is None, f"Expected player1_seed to be None for non-numeric 'WC', got {result['player1_seed']}"
+    assert result['player2_seed'] is None, f"Expected player2_seed to be None for non-numeric 'Q', got {result['player2_seed']}"
+    print("✓ Test passed: _parse_match handles non-numeric seed values")
+
+
 def main():
     """Run all tests."""
     print("\n" + "="*60)
@@ -103,6 +130,7 @@ def main():
         test_parse_match_with_espn_data()
         test_parse_match_with_missing_players()
         test_parse_match_with_tbd_players()
+        test_parse_match_with_non_numeric_seeds()
         
         print("\n" + "="*60)
         print("All tests passed! ✓")

@@ -147,8 +147,9 @@ class TennisSeasonPopulator:
                 'player2': player2,
                 'player1_rank': match_data.get('player1_rank'),
                 'player2_rank': match_data.get('player2_rank'),
-                'player1_seed': match_data.get('player1_seed'),
-                'player2_seed': match_data.get('player2_seed'),
+                # Convert seed values to integers, handling non-numeric values
+                'player1_seed': int(match_data.get('player1_seed')) if match_data.get('player1_seed') and str(match_data.get('player1_seed')).isdigit() else None,
+                'player2_seed': int(match_data.get('player2_seed')) if match_data.get('player2_seed') and str(match_data.get('player2_seed')).isdigit() else None,
                 'winner': winner,
                 'score': score,
             }
@@ -181,7 +182,7 @@ class TennisSeasonPopulator:
             return match
             
         except Exception as e:
-            log.error(f"Error parsing match {match_data.get('id')}: {e}")
+            log.error(f"Error parsing match {match_data.get('match_id')}: {e}")
             return None
     
     async def _calculate_player_stats(self, tour: str):
