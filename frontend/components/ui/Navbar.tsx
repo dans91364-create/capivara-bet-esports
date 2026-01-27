@@ -15,6 +15,7 @@ export default function Navbar() {
     { href: "/games", label: "Jogos" },
     { href: "/props", label: "Player Props" },
     { href: "/value-bets", label: "Value Bets" },
+    { href: "/validation", label: "📊 Validação" },
   ];
 
   return (

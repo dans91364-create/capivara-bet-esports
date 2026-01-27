@@ -384,3 +384,88 @@ export async function getValueBets(params?: {
   );
 }
 
+/**
+ * Validation types
+ */
+export interface PeriodInfo {
+  start: string;
+  end: string;
+  days: number;
+}
+
+export interface OverallMetrics {
+  total_bets: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  roi: number;
+  profit: number;
+  total_wagered: number;
+  avg_odds: number;
+  clv_average: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+}
+
+export interface SportMetrics {
+  sport: string;
+  name: string;
+  icon: string;
+  total_bets: number;
+  wins: number;
+  win_rate: number;
+  roi: number;
+  profit: number;
+  clv_average: number;
+  rank: number;
+}
+
+export interface MarketMetrics {
+  market: string;
+  name: string;
+  total_bets: number;
+  wins: number;
+  win_rate: number;
+  roi: number;
+  rank: number;
+}
+
+export interface EquityPoint {
+  date: string;
+  bankroll: number;
+  profit: number;
+}
+
+export interface CalibrationMetrics {
+  brier_score: number;
+  calibration_error: number;
+  overround_beat_rate: number;
+}
+
+export interface Insight {
+  type: "success" | "warning" | "info" | "danger";
+  title: string;
+  message: string;
+}
+
+export interface ValidationMetrics {
+  period: PeriodInfo;
+  overall: OverallMetrics;
+  by_sport: SportMetrics[];
+  by_market: MarketMetrics[];
+  equity_curve: EquityPoint[];
+  calibration: CalibrationMetrics;
+  insights: Insight[];
+}
+
+/**
+ * Get validation metrics for paper trading.
+ */
+export async function getValidationMetrics(days?: number): Promise<ValidationMetrics> {
+  const searchParams = new URLSearchParams();
+  if (days !== undefined) searchParams.set("days", days.toString());
+
+  const query = searchParams.toString();
+  return fetchAPI<ValidationMetrics>(`/api/validation/metrics${query ? `?${query}` : ""}`);
+}
+
