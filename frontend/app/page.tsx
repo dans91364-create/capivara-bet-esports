@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import GameCard from "@/components/GameCard";
+import { getSportIcon } from "@/lib/sports";
 import { 
   getGames, 
   getLiveGames, 
@@ -72,13 +73,7 @@ export default function Home() {
   }, []);
 
   const getGameIcon = (game: string) => {
-    const icons: Record<string, string> = {
-      valorant: "🎯",
-      cs2: "🔫",
-      lol: "⚔️",
-      dota2: "🏆"
-    };
-    return icons[game.toLowerCase()] || "🎮";
+    return getSportIcon(game.toLowerCase());
   };
 
   return (

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import GameCard from "@/components/GameCard";
 import { getGames, Game } from "@/lib/api";
+import { SPORTS, getSportById } from "@/lib/sports";
 
 export default function GamesPage() {
   const [games, setGames] = useState<Game[]>([]);
@@ -31,7 +32,7 @@ export default function GamesPage() {
     fetchGames();
   }, [selectedGame]);
 
-  const gameTypes = ["cs2", "lol", "dota2", "valorant", "nba"];
+  const gameTypes = SPORTS.map(s => s.id);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -44,21 +45,25 @@ export default function GamesPage() {
       <div className="mb-6 flex gap-2 flex-wrap">
         <Badge
           variant={selectedGame === null ? "default" : "outline"}
-          className="cursor-pointer"
+          className="cursor-pointer px-4 py-2"
           onClick={() => setSelectedGame(null)}
         >
           Todos
         </Badge>
-        {gameTypes.map((type) => (
-          <Badge
-            key={type}
-            variant={selectedGame === type ? "default" : "outline"}
-            className="cursor-pointer"
-            onClick={() => setSelectedGame(type)}
-          >
-            {type.toUpperCase()}
-          </Badge>
-        ))}
+        {gameTypes.map((type) => {
+          const sport = getSportById(type);
+          return (
+            <Badge
+              key={type}
+              variant={selectedGame === type ? "default" : "outline"}
+              className="cursor-pointer px-4 py-2 flex items-center gap-1"
+              onClick={() => setSelectedGame(type)}
+            >
+              <span>{sport?.icon}</span>
+              <span>{sport?.name || type.toUpperCase()}</span>
+            </Badge>
+          );
+        })}
       </div>
 
       {/* Games Grid */}
