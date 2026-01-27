@@ -230,10 +230,25 @@ class EsportsTournamentPopulator:
             Parsed match dict or None
         """
         try:
-            # Generate unique match_id from match_page or use teams+event
-            match_id = match_data.match_page if match_data.match_page else f"{match_data.team1}_{match_data.team2}_{match_data.time_completed}"
+            # Generate unique match_id from match_page or use hash of teams+event
+            if match_data.match_page:
+                match_id = match_data.match_page
+            else:
+                import hashlib
+                unique_str = f"{match_data.team1}_{match_data.team2}_{match_data.time_completed}_{match_data.match_event}"
+                match_id = hashlib.md5(unique_str.encode()).hexdigest()
             
             # ValorantResult is a dataclass - access attributes directly
+            # Safely handle score comparison
+            try:
+                score1 = int(match_data.score1) if match_data.score1 else 0
+                score2 = int(match_data.score2) if match_data.score2 else 0
+            except (ValueError, TypeError):
+                score1 = 0
+                score2 = 0
+            
+            winner = match_data.team1 if score1 > score2 else match_data.team2
+            
             return {
                 'match_id': match_id,
                 'game': 'valorant',
@@ -242,9 +257,9 @@ class EsportsTournamentPopulator:
                 'match_date': datetime.now(),  # time_completed is string, use now for simplicity
                 'team1': match_data.team1,
                 'team2': match_data.team2,
-                'team1_score': int(match_data.score1) if match_data.score1 else 0,
-                'team2_score': int(match_data.score2) if match_data.score2 else 0,
-                'winner': match_data.team1 if match_data.score1 > match_data.score2 else match_data.team2,
+                'team1_score': score1,
+                'team2_score': score2,
+                'winner': winner,
                 'best_of': 3,  # Default
             }
         except Exception as e:
@@ -262,17 +277,23 @@ class EsportsTournamentPopulator:
         """
         try:
             # MatchResult is a dataclass - access attributes directly
+            # Safely handle team names
+            team1_name = match_data.team1.name if match_data.team1 else 'Unknown'
+            team2_name = match_data.team2.name if match_data.team2 else 'Unknown'
+            
+            winner = team1_name if match_data.team1_score > match_data.team2_score else team2_name
+            
             return {
                 'match_id': str(match_data.id),
                 'game': 'cs2',
                 'tournament': match_data.event if match_data.event else 'Unknown',
                 'tournament_tier': 'C',  # Default tier
                 'match_date': match_data.date if match_data.date else datetime.now(),
-                'team1': match_data.team1.name,
-                'team2': match_data.team2.name,
+                'team1': team1_name,
+                'team2': team2_name,
                 'team1_score': match_data.team1_score,
                 'team2_score': match_data.team2_score,
-                'winner': match_data.team1.name if match_data.team1_score > match_data.team2_score else match_data.team2.name,
+                'winner': winner,
                 'best_of': 3,  # Default
             }
         except Exception as e:
