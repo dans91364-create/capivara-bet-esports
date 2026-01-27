@@ -4,6 +4,7 @@ This script collects COMPLETE tournament data for multiple esports.
 """
 import asyncio
 import sys
+import uuid
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
@@ -234,8 +235,8 @@ class EsportsTournamentPopulator:
             if match_data.match_page:
                 match_id = match_data.match_page
             else:
-                import uuid
-                unique_str = f"{match_data.team1}_{match_data.team2}_{match_data.time_completed}_{match_data.match_event}"
+                # Use UUID with null-byte separated fields to avoid collisions
+                unique_str = f"{match_data.team1}\x00{match_data.team2}\x00{match_data.time_completed}\x00{match_data.match_event}"
                 match_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_str))
             
             # ValorantResult is a dataclass - access attributes directly
