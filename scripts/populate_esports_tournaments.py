@@ -4,6 +4,7 @@ This script collects COMPLETE tournament data for multiple esports.
 """
 import asyncio
 import sys
+import uuid
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
@@ -90,9 +91,8 @@ class EsportsTournamentPopulator:
             vlr = VLRUnified()
             matches_added = 0
             
-            # Get recent matches
-            # This is a simplified version - real implementation would paginate through tournaments
-            matches = await vlr.get_recent_matches(limit=100)
+            # Get recent matches using correct method
+            matches = await vlr.get_results(num_pages=1)
             
             for match_data in matches:
                 match = self._parse_valorant_match(match_data)
@@ -108,6 +108,7 @@ class EsportsTournamentPopulator:
             
         except Exception as e:
             log.error(f"Error populating Valorant: {e}")
+            self.db.rollback()
     
     async def populate_cs2(self, days_back: int):
         """Populate CS2 matches.
@@ -127,8 +128,8 @@ class EsportsTournamentPopulator:
             hltv = HLTVUnified()
             matches_added = 0
             
-            # Get recent matches
-            matches = await hltv.get_recent_matches(limit=100)
+            # Get recent matches using correct method (already async)
+            matches = await hltv.get_results(limit=100)
             
             for match_data in matches:
                 match = self._parse_cs2_match(match_data)
@@ -144,6 +145,7 @@ class EsportsTournamentPopulator:
             
         except Exception as e:
             log.error(f"Error populating CS2: {e}")
+            self.db.rollback()
     
     async def populate_lol(self, days_back: int):
         """Populate League of Legends matches.
@@ -163,8 +165,8 @@ class EsportsTournamentPopulator:
             lol = LoLUnified()
             matches_added = 0
             
-            # Get recent matches
-            matches = await lol.get_recent_matches(limit=100)
+            # Get completed matches using correct method
+            matches = await lol.get_completed_matches()
             
             for match_data in matches:
                 match = self._parse_lol_match(match_data)
@@ -180,6 +182,7 @@ class EsportsTournamentPopulator:
             
         except Exception as e:
             log.error(f"Error populating LoL: {e}")
+            self.db.rollback()
     
     async def populate_dota(self, days_back: int):
         """Populate Dota 2 matches.
@@ -199,8 +202,8 @@ class EsportsTournamentPopulator:
             dota = DotaUnified()
             matches_added = 0
             
-            # Get recent matches
-            matches = await dota.get_recent_matches(limit=100)
+            # Get pro matches using correct method
+            matches = await dota.get_pro_matches(limit=100)
             
             for match_data in matches:
                 match = self._parse_dota_match(match_data)
@@ -216,110 +219,163 @@ class EsportsTournamentPopulator:
             
         except Exception as e:
             log.error(f"Error populating Dota 2: {e}")
+            self.db.rollback()
     
-    def _parse_valorant_match(self, match_data: Dict) -> Optional[Dict]:
+    def _parse_valorant_match(self, match_data) -> Optional[Dict]:
         """Parse Valorant match data.
         
         Args:
-            match_data: Raw match data
+            match_data: ValorantResult object (not dict!)
             
         Returns:
             Parsed match dict or None
         """
         try:
+            # Generate unique match_id from match_page or use UUID
+            if match_data.match_page:
+                match_id = match_data.match_page
+            else:
+                # Use UUID with null-byte separated fields to avoid collisions
+                unique_str = f"{match_data.team1}\x00{match_data.team2}\x00{match_data.time_completed}\x00{match_data.match_event}"
+                match_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_str))
+            
+            # ValorantResult is a dataclass - access attributes directly
+            # Safely handle score comparison
+            try:
+                score1 = int(match_data.score1) if match_data.score1 else 0
+                score2 = int(match_data.score2) if match_data.score2 else 0
+            except (ValueError, TypeError):
+                score1 = 0
+                score2 = 0
+            
+            # Determine winner (handle ties)
+            if score1 > score2:
+                winner = match_data.team1
+            elif score2 > score1:
+                winner = match_data.team2
+            else:
+                winner = ''  # Tie or unknown
+            
             return {
-                'match_id': match_data.get('id', ''),
+                'match_id': match_id,
                 'game': 'valorant',
-                'tournament': match_data.get('tournament', ''),
-                'tournament_tier': match_data.get('tier', 'C'),
-                'match_date': match_data.get('date', datetime.now()),
-                'team1': match_data.get('team1', ''),
-                'team2': match_data.get('team2', ''),
-                'team1_score': match_data.get('team1_score', 0),
-                'team2_score': match_data.get('team2_score', 0),
-                'winner': match_data.get('winner', ''),
-                'best_of': match_data.get('best_of', 3),
+                'tournament': match_data.match_event if match_data.match_event else 'Unknown',
+                'tournament_tier': 'C',  # Default tier
+                'match_date': datetime.now(),  # time_completed is string, use now for simplicity
+                'team1': match_data.team1,
+                'team2': match_data.team2,
+                'team1_score': score1,
+                'team2_score': score2,
+                'winner': winner,
+                'best_of': 3,  # Default
             }
         except Exception as e:
             log.error(f"Error parsing Valorant match: {e}")
             return None
     
-    def _parse_cs2_match(self, match_data: Dict) -> Optional[Dict]:
+    def _parse_cs2_match(self, match_data) -> Optional[Dict]:
         """Parse CS2 match data.
         
         Args:
-            match_data: Raw match data
+            match_data: MatchResult object (not dict!)
             
         Returns:
             Parsed match dict or None
         """
         try:
+            # MatchResult is a dataclass - access attributes directly
+            # Safely handle team names
+            team1_name = match_data.team1.name if match_data.team1 else 'Unknown'
+            team2_name = match_data.team2.name if match_data.team2 else 'Unknown'
+            
+            # Determine winner (handle ties)
+            if match_data.team1_score > match_data.team2_score:
+                winner = team1_name
+            elif match_data.team2_score > match_data.team1_score:
+                winner = team2_name
+            else:
+                winner = ''  # Tie or unknown
+            
             return {
-                'match_id': match_data.get('id', ''),
+                'match_id': str(match_data.id),
                 'game': 'cs2',
-                'tournament': match_data.get('tournament', ''),
-                'tournament_tier': match_data.get('tier', 'C'),
-                'match_date': match_data.get('date', datetime.now()),
-                'team1': match_data.get('team1', ''),
-                'team2': match_data.get('team2', ''),
-                'team1_score': match_data.get('team1_score', 0),
-                'team2_score': match_data.get('team2_score', 0),
-                'winner': match_data.get('winner', ''),
-                'best_of': match_data.get('best_of', 3),
+                'tournament': match_data.event if match_data.event else 'Unknown',
+                'tournament_tier': 'C',  # Default tier
+                'match_date': match_data.date if match_data.date else datetime.now(),
+                'team1': team1_name,
+                'team2': team2_name,
+                'team1_score': match_data.team1_score,
+                'team2_score': match_data.team2_score,
+                'winner': winner,
+                'best_of': 3,  # Default
             }
         except Exception as e:
             log.error(f"Error parsing CS2 match: {e}")
             return None
     
-    def _parse_lol_match(self, match_data: Dict) -> Optional[Dict]:
+    def _parse_lol_match(self, match_data) -> Optional[Dict]:
         """Parse LoL match data.
         
         Args:
-            match_data: Raw match data
+            match_data: LoLMatch object (not dict!)
             
         Returns:
             Parsed match dict or None
         """
         try:
+            # LoLMatch is a dataclass - access attributes directly
+            # Determine winner (handle ties)
+            if match_data.team1_wins > match_data.team2_wins:
+                winner = match_data.team1_name
+            elif match_data.team2_wins > match_data.team1_wins:
+                winner = match_data.team2_name
+            else:
+                winner = ''  # Tie or unknown
+            
             return {
-                'match_id': match_data.get('id', ''),
+                'match_id': match_data.id,
                 'game': 'lol',
-                'tournament': match_data.get('tournament', ''),
-                'tournament_tier': match_data.get('tier', 'C'),
-                'match_date': match_data.get('date', datetime.now()),
-                'team1': match_data.get('team1', ''),
-                'team2': match_data.get('team2', ''),
-                'team1_score': match_data.get('team1_score', 0),
-                'team2_score': match_data.get('team2_score', 0),
-                'winner': match_data.get('winner', ''),
-                'best_of': match_data.get('best_of', 3),
+                'tournament': match_data.league_name,
+                'tournament_tier': 'A' if match_data.league_slug in ['lck', 'lpl', 'lec', 'lcs'] else 'B',
+                'match_date': match_data.start_time,
+                'team1': match_data.team1_name,
+                'team2': match_data.team2_name,
+                'team1_score': match_data.team1_wins,
+                'team2_score': match_data.team2_wins,
+                'winner': winner,
+                'best_of': match_data.best_of,
             }
         except Exception as e:
             log.error(f"Error parsing LoL match: {e}")
             return None
     
-    def _parse_dota_match(self, match_data: Dict) -> Optional[Dict]:
+    def _parse_dota_match(self, match_data) -> Optional[Dict]:
         """Parse Dota 2 match data.
         
         Args:
-            match_data: Raw match data
+            match_data: DotaProMatch object (not dict!)
             
         Returns:
             Parsed match dict or None
         """
         try:
+            # DotaProMatch is a dataclass - access attributes directly
+            winner = ''
+            if match_data.radiant_win is not None:
+                winner = match_data.radiant_name if match_data.radiant_win else match_data.dire_name
+            
             return {
-                'match_id': match_data.get('id', ''),
+                'match_id': str(match_data.match_id),
                 'game': 'dota2',
-                'tournament': match_data.get('tournament', ''),
-                'tournament_tier': match_data.get('tier', 'C'),
-                'match_date': match_data.get('date', datetime.now()),
-                'team1': match_data.get('team1', ''),
-                'team2': match_data.get('team2', ''),
-                'team1_score': match_data.get('team1_score', 0),
-                'team2_score': match_data.get('team2_score', 0),
-                'winner': match_data.get('winner', ''),
-                'best_of': match_data.get('best_of', 3),
+                'tournament': match_data.league_name if match_data.league_name else 'Unknown',
+                'tournament_tier': 'C',  # Default tier
+                'match_date': datetime.fromtimestamp(match_data.start_time) if match_data.start_time else datetime.now(),
+                'team1': match_data.radiant_name if match_data.radiant_name else 'Radiant',
+                'team2': match_data.dire_name if match_data.dire_name else 'Dire',
+                'team1_score': match_data.radiant_score,
+                'team2_score': match_data.dire_score,
+                'winner': winner,
+                'best_of': 1,  # Dota matches are typically Bo1 or series
             }
         except Exception as e:
             log.error(f"Error parsing Dota 2 match: {e}")
