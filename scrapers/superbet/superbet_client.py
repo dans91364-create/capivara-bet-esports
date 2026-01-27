@@ -230,7 +230,7 @@ class SuperbetClient:
                 
                 # Parse markets/odds - novo formato
                 markets = []
-                raw_odds = item.get('odds', [])
+                raw_odds = item.get('odds') or []
                 markets_dict = {}
                 for odd_data in raw_odds:
                     market_uuid = odd_data.get('marketUuid', 'default')
