@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import GameCard from "@/components/GameCard";
-import { getSportIcon } from "@/lib/sports";
+import { getSportIcon, SPORTS } from "@/lib/sports";
 import { 
   getGames, 
   getLiveGames, 
@@ -168,24 +168,25 @@ export default function Home() {
       </div>
 
       {/* Game Breakdown */}
-      {overview && overview.breakdown_by_game && Object.keys(overview.breakdown_by_game).length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Por Jogo</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(overview.breakdown_by_game).map(([game, count]) => (
-              <Card key={game}>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-white mb-4">Por Jogo</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {SPORTS.map((sport) => {
+            const count = overview?.breakdown_by_game?.[sport.id] || 0;
+            return (
+              <Card key={sport.id}>
                 <CardContent className="py-6">
                   <div className="text-center">
-                    <div className="text-4xl mb-2">{getGameIcon(game)}</div>
+                    <div className="text-4xl mb-2">{sport.icon}</div>
                     <div className="text-2xl font-bold text-white">{count}</div>
-                    <p className="text-sm text-slate-400 capitalize">{game}</p>
+                    <p className="text-sm text-slate-400">{sport.name}</p>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Recent Results */}
       {recentResults.length > 0 && (
