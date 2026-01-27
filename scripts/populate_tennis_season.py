@@ -109,6 +109,19 @@ class TennisSeasonPopulator:
         # Calculate player stats
         await self._calculate_player_stats(tour)
     
+    def _parse_seed_value(self, seed_value) -> Optional[int]:
+        """Parse seed value to integer, handling non-numeric values.
+        
+        Args:
+            seed_value: Seed value from ESPN (can be int, string digit, or non-numeric like 'WC', 'Q')
+            
+        Returns:
+            Integer seed value or None for non-numeric values
+        """
+        if seed_value and str(seed_value).isdigit():
+            return int(seed_value)
+        return None
+    
     def _parse_match(self, match_data: Dict, tour: str, match_date) -> Optional[Dict]:
         """Parse match data into TennisMatch data.
         
@@ -122,7 +135,10 @@ class TennisSeasonPopulator:
         """
         try:
             # ESPN returns 'match_id', not 'id'
-            match_id = str(match_data.get('match_id', ''))
+            match_id = match_data.get('match_id') or ''
+            if not match_id:
+                return None
+            match_id = str(match_id)
             
             # ESPN returns 'player1_name' and 'player2_name', not 'player1' and 'player2'
             player1 = match_data.get('player1_name') or 'TBD'
@@ -147,9 +163,8 @@ class TennisSeasonPopulator:
                 'player2': player2,
                 'player1_rank': match_data.get('player1_rank'),
                 'player2_rank': match_data.get('player2_rank'),
-                # Convert seed values to integers, handling non-numeric values
-                'player1_seed': int(match_data.get('player1_seed')) if match_data.get('player1_seed') and str(match_data.get('player1_seed')).isdigit() else None,
-                'player2_seed': int(match_data.get('player2_seed')) if match_data.get('player2_seed') and str(match_data.get('player2_seed')).isdigit() else None,
+                'player1_seed': self._parse_seed_value(match_data.get('player1_seed')),
+                'player2_seed': self._parse_seed_value(match_data.get('player2_seed')),
                 'winner': winner,
                 'score': score,
             }

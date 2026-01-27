@@ -120,6 +120,26 @@ def test_parse_match_with_non_numeric_seeds():
     print("✓ Test passed: _parse_match handles non-numeric seed values")
 
 
+def test_parse_match_with_missing_match_id():
+    """Test that _parse_match returns None when match_id is missing."""
+    populator = TennisSeasonPopulator(season="2026")
+    
+    # ESPN data with missing match_id
+    espn_match_data = {
+        'tour': 'atp',
+        'name': 'Australian Open',
+        'round': 'Round 1',
+        'player1_name': 'Rafael Nadal',
+        'player2_name': 'Roger Federer',
+    }
+    
+    match_date = datetime(2026, 1, 11).date()
+    result = populator._parse_match(espn_match_data, 'atp', match_date)
+    
+    assert result is None, "Parse match should return None when match_id is missing"
+    print("✓ Test passed: _parse_match returns None for missing match_id")
+
+
 def main():
     """Run all tests."""
     print("\n" + "="*60)
@@ -131,6 +151,7 @@ def main():
         test_parse_match_with_missing_players()
         test_parse_match_with_tbd_players()
         test_parse_match_with_non_numeric_seeds()
+        test_parse_match_with_missing_match_id()
         
         print("\n" + "="*60)
         print("All tests passed! ✓")
