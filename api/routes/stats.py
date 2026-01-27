@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from api.dependencies import get_db
 from database.historical_models import EsportsMatch
 
@@ -35,7 +35,6 @@ async def get_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
     breakdown = {game: count for game, count in game_breakdown}
     
     # Recent matches count (last 7 days)
-    from datetime import timedelta
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     recent_count = db.query(func.count(EsportsMatch.id)).filter(
         EsportsMatch.match_date >= seven_days_ago
