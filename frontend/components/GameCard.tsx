@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Game } from "@/lib/api";
-import { formatTime, formatDate } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 
 interface GameCardProps {
   game: Game;
