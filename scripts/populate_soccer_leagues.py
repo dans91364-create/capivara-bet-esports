@@ -106,6 +106,7 @@ class SoccerLeaguePopulator:
                         
             except Exception as e:
                 log.error(f"Error fetching matches for {league_id} on {date_str}: {e}")
+                self.db.rollback()
             
             current_date += timedelta(days=1)
             # Small delay to be nice to the API
@@ -129,7 +130,8 @@ class SoccerLeaguePopulator:
             Match data dict or None
         """
         try:
-            match_id = match_data.get('id', '')
+            # ESPN scraper returns 'game_id' not 'id'
+            match_id = match_data.get('game_id', '')
             
             # Get teams
             home_team = match_data.get('home_team', '')
@@ -179,7 +181,7 @@ class SoccerLeaguePopulator:
             return match
             
         except Exception as e:
-            log.error(f"Error parsing match {match_data.get('id')}: {e}")
+            log.error(f"Error parsing match {match_data.get('game_id', match_data.get('id'))}: {e}")
             return None
     
     async def _calculate_team_stats(self, league_id: str, league_name: str):

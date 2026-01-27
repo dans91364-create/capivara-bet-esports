@@ -92,6 +92,7 @@ class TennisSeasonPopulator:
                         
             except Exception as e:
                 log.error(f"Error fetching matches for {tour} on {date_str}: {e}")
+                self.db.rollback()
             
             current_date += timedelta(days=1)
             # Small delay to be nice to the API
