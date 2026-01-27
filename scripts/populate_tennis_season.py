@@ -81,8 +81,14 @@ class TennisSeasonPopulator:
                         # Parse and save match
                         match = self._parse_match(match_data, tour, current_date.date())
                         if match:
-                            self.db.merge(TennisMatch(**match))
-                            matches_added += 1
+                            # Check for duplicates before inserting
+                            existing = self.db.query(TennisMatch).filter(
+                                TennisMatch.match_id == match['match_id']
+                            ).first()
+                            
+                            if not existing:
+                                self.db.merge(TennisMatch(**match))
+                                matches_added += 1
                     
                     # Commit after each day
                     self.db.commit()
@@ -92,6 +98,7 @@ class TennisSeasonPopulator:
                         
             except Exception as e:
                 log.error(f"Error fetching matches for {tour} on {date_str}: {e}")
+                self.db.rollback()
             
             current_date += timedelta(days=1)
             # Small delay to be nice to the API
@@ -114,13 +121,14 @@ class TennisSeasonPopulator:
             Match data dict or None
         """
         try:
-            match_id = match_data.get('id', '')
+            # ESPN returns 'match_id', not 'id'
+            match_id = str(match_data.get('match_id', ''))
             
-            # Get players
-            player1 = match_data.get('player1', '')
-            player2 = match_data.get('player2', '')
+            # ESPN returns 'player1_name' and 'player2_name', not 'player1' and 'player2'
+            player1 = match_data.get('player1_name') or 'TBD'
+            player2 = match_data.get('player2_name') or 'TBD'
             
-            if not player1 or not player2:
+            if not player1 or not player2 or player1 == 'TBD' or player2 == 'TBD':
                 return None
             
             # Get scores
@@ -130,7 +138,8 @@ class TennisSeasonPopulator:
             match = {
                 'match_id': match_id,
                 'tour': tour,
-                'tournament': match_data.get('tournament', ''),
+                # ESPN returns tournament name in 'name' field, not 'tournament'
+                'tournament': match_data.get('name', 'Unknown'),
                 'surface': match_data.get('surface', 'hard'),
                 'round': match_data.get('round', ''),
                 'match_date': match_date,
@@ -138,6 +147,8 @@ class TennisSeasonPopulator:
                 'player2': player2,
                 'player1_rank': match_data.get('player1_rank'),
                 'player2_rank': match_data.get('player2_rank'),
+                'player1_seed': match_data.get('player1_seed'),
+                'player2_seed': match_data.get('player2_seed'),
                 'winner': winner,
                 'score': score,
             }
