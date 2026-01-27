@@ -8,8 +8,9 @@ import TeamCard from "@/components/TeamCard";
 import PlayerList from "@/components/PlayerList";
 import PlayerStatsPanel from "@/components/PlayerStatsPanel";
 import { getTeamsByGame, getPlayersByTeam, getPlayerStats, Team, TeamPlayer, PlayerStats } from "@/lib/api";
+import { SPORTS } from "@/lib/sports";
 
-const SPORTS = ["valorant", "cs2", "lol", "dota2", "nba"];
+const SPORT_IDS = SPORTS.map(s => s.id);
 
 export default function PropsPage() {
   const [selectedSport, setSelectedSport] = useState<string>("valorant");
@@ -100,7 +101,7 @@ export default function PropsPage() {
       {/* Sport Tabs */}
       <div className="mb-8">
         <SportTabs
-          sports={SPORTS}
+          sports={SPORT_IDS}
           selectedSport={selectedSport}
           onSelectSport={setSelectedSport}
         />

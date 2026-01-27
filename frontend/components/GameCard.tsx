@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Game } from "@/lib/api";
 import { formatTime } from "@/lib/utils";
+import { getSportIcon, getSportName } from "@/lib/sports";
 
 interface GameCardProps {
   game: Game;
@@ -18,11 +19,12 @@ export default function GameCard({ game }: GameCardProps) {
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {game.game.toUpperCase()}
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <span>{getSportIcon(game.game)}</span>
+              <span>{getSportName(game.game)}</span>
             </Badge>
             {game.tournament && (
-              <span className="text-xs text-slate-400">{game.tournament}</span>
+              <span className="text-xs text-slate-400 truncate max-w-[200px]">{game.tournament}</span>
             )}
           </div>
           {isLive && (

@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { ESPORTS, TRADITIONAL_SPORTS } from "@/lib/sports";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [showSportsMenu, setShowSportsMenu] = useState(false);
 
   const links = [
     { href: "/", label: "Dashboard" },
@@ -26,7 +29,7 @@ export default function Navbar() {
               <span className="text-xl font-bold text-white">Capivara Bet</span>
             </Link>
 
-            <div className="hidden md:flex gap-6">
+            <div className="hidden md:flex gap-6 items-center">
               {links.map((link) => (
                 <Link
                   key={link.href}
@@ -41,6 +44,58 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              
+              {/* Sports Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSportsMenu(!showSportsMenu)}
+                  className="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors flex items-center gap-1"
+                >
+                  Esportes
+                  <span className="text-xs">▼</span>
+                </button>
+                
+                {showSportsMenu && (
+                  <div className="absolute top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
+                    <div className="py-2">
+                      {/* Esports Section */}
+                      <div className="px-3 py-1 text-xs text-slate-500 font-semibold">
+                        ESPORTS
+                      </div>
+                      {ESPORTS.map((sport) => (
+                        <Link
+                          key={sport.id}
+                          href={`/games?sport=${sport.id}`}
+                          className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                          onClick={() => setShowSportsMenu(false)}
+                        >
+                          <span className="mr-2">{sport.icon}</span>
+                          {sport.name}
+                        </Link>
+                      ))}
+                      
+                      {/* Divider */}
+                      <div className="my-2 border-t border-slate-700"></div>
+                      
+                      {/* Traditional Sports Section */}
+                      <div className="px-3 py-1 text-xs text-slate-500 font-semibold">
+                        TRADICIONAIS
+                      </div>
+                      {TRADITIONAL_SPORTS.map((sport) => (
+                        <Link
+                          key={sport.id}
+                          href={`/games?sport=${sport.id}`}
+                          className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                          onClick={() => setShowSportsMenu(false)}
+                        >
+                          <span className="mr-2">{sport.icon}</span>
+                          {sport.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -51,6 +106,22 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      
+      {/* Close menu on outside click */}
+      {showSportsMenu && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowSportsMenu(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Close sports menu"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+              setShowSportsMenu(false);
+            }
+          }}
+        />
+      )}
     </nav>
   );
 }
