@@ -196,6 +196,59 @@ export interface TeamStats {
   win_rate: number;
 }
 
+export interface Team {
+  team: string;
+  game: string;
+  matches_played: number;
+  wins: number;
+  win_rate: number;
+}
+
+export interface TeamPlayer {
+  player_id: string;
+  player_name: string;
+  team: string;
+  matches_played: number;
+  avg_kills: number;
+  avg_deaths: number;
+  avg_assists: number;
+  avg_kd: number;
+}
+
+export interface PlayerMatch {
+  match_id: string;
+  match_date: string | null;
+  tournament: string;
+  opponent: string;
+  won: boolean;
+  kills: number | null;
+  deaths: number | null;
+  assists: number | null;
+  kd_ratio: number | null;
+  adr: number | null;
+  acs: number | null;
+  rating: number | null;
+  agent: string | null;
+  champion: string | null;
+  hero: string | null;
+}
+
+export interface PlayerStats {
+  player_id: string;
+  player_name: string;
+  team: string;
+  total_matches: number;
+  averages: {
+    kills: number;
+    deaths: number;
+    assists: number;
+    kd_ratio: number;
+    adr: number | null;
+    acs: number | null;
+  };
+  recent_matches: PlayerMatch[];
+}
+
 export interface RecentResult {
   id: number;
   game: string;
@@ -254,4 +307,30 @@ export async function getTournaments(game?: string): Promise<Tournament[]> {
 
   const query = searchParams.toString();
   return fetchAPI<Tournament[]>(`/api/stats/tournaments${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get teams by game/sport.
+ */
+export async function getTeamsByGame(game: string): Promise<Team[]> {
+  const searchParams = new URLSearchParams({ game });
+  return fetchAPI<Team[]>(`/api/teams?${searchParams.toString()}`);
+}
+
+/**
+ * Get players by team.
+ */
+export async function getPlayersByTeam(teamName: string): Promise<TeamPlayer[]> {
+  return fetchAPI<TeamPlayer[]>(`/api/teams/${encodeURIComponent(teamName)}/players`);
+}
+
+/**
+ * Get player statistics.
+ */
+export async function getPlayerStats(playerId: string, limit?: number): Promise<PlayerStats> {
+  const searchParams = new URLSearchParams();
+  if (limit) searchParams.set("limit", limit.toString());
+
+  const query = searchParams.toString();
+  return fetchAPI<PlayerStats>(`/api/players/${encodeURIComponent(playerId)}/stats${query ? `?${query}` : ""}`);
 }
