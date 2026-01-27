@@ -2,14 +2,13 @@
 from fastapi import APIRouter
 from datetime import datetime, timedelta
 from typing import Optional
-import random
 
 router = APIRouter()
 
 
 @router.get("/value-bets")
 async def get_value_bets(
-    sport: str = "all",
+    sport: Optional[str] = None,
     min_edge: float = 3.0,
     min_confidence: int = 55
 ):
@@ -19,7 +18,7 @@ async def get_value_bets(
     Returns list of bets where model probability exceeds implied probability from odds.
     
     Args:
-        sport: Filter by sport (all, nba, soccer, tennis, valorant, cs2, lol, dota2)
+        sport: Filter by sport (nba, soccer, tennis, valorant, cs2, lol, dota2). If None, returns all sports.
         min_edge: Minimum edge percentage (default 3%)
         min_confidence: Minimum confidence score (default 55%)
     
@@ -319,7 +318,7 @@ async def get_value_bets(
     ]
     
     # Filter by sport
-    if sport != "all":
+    if sport is not None:
         filtered_bets = [bet for bet in mock_bets if bet["sport"] == sport]
     else:
         filtered_bets = mock_bets
