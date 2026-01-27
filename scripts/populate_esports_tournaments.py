@@ -230,13 +230,13 @@ class EsportsTournamentPopulator:
             Parsed match dict or None
         """
         try:
-            # Generate unique match_id from match_page or use hash of teams+event
+            # Generate unique match_id from match_page or use UUID
             if match_data.match_page:
                 match_id = match_data.match_page
             else:
-                import hashlib
+                import uuid
                 unique_str = f"{match_data.team1}_{match_data.team2}_{match_data.time_completed}_{match_data.match_event}"
-                match_id = hashlib.md5(unique_str.encode()).hexdigest()
+                match_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_str))
             
             # ValorantResult is a dataclass - access attributes directly
             # Safely handle score comparison
@@ -247,7 +247,13 @@ class EsportsTournamentPopulator:
                 score1 = 0
                 score2 = 0
             
-            winner = match_data.team1 if score1 > score2 else match_data.team2
+            # Determine winner (handle ties)
+            if score1 > score2:
+                winner = match_data.team1
+            elif score2 > score1:
+                winner = match_data.team2
+            else:
+                winner = ''  # Tie or unknown
             
             return {
                 'match_id': match_id,
@@ -281,7 +287,13 @@ class EsportsTournamentPopulator:
             team1_name = match_data.team1.name if match_data.team1 else 'Unknown'
             team2_name = match_data.team2.name if match_data.team2 else 'Unknown'
             
-            winner = team1_name if match_data.team1_score > match_data.team2_score else team2_name
+            # Determine winner (handle ties)
+            if match_data.team1_score > match_data.team2_score:
+                winner = team1_name
+            elif match_data.team2_score > match_data.team1_score:
+                winner = team2_name
+            else:
+                winner = ''  # Tie or unknown
             
             return {
                 'match_id': str(match_data.id),
@@ -311,6 +323,14 @@ class EsportsTournamentPopulator:
         """
         try:
             # LoLMatch is a dataclass - access attributes directly
+            # Determine winner (handle ties)
+            if match_data.team1_wins > match_data.team2_wins:
+                winner = match_data.team1_name
+            elif match_data.team2_wins > match_data.team1_wins:
+                winner = match_data.team2_name
+            else:
+                winner = ''  # Tie or unknown
+            
             return {
                 'match_id': match_data.id,
                 'game': 'lol',
@@ -321,7 +341,7 @@ class EsportsTournamentPopulator:
                 'team2': match_data.team2_name,
                 'team1_score': match_data.team1_wins,
                 'team2_score': match_data.team2_wins,
-                'winner': match_data.team1_name if match_data.team1_wins > match_data.team2_wins else match_data.team2_name,
+                'winner': winner,
                 'best_of': match_data.best_of,
             }
         except Exception as e:
